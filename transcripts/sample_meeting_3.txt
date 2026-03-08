@@ -1,0 +1,14 @@
+Sarah: Welcome everyone. Let's review the current state of the product dashboard.
+Mike: The analytics page is loading slowly. I need to optimize the database queries by next Wednesday.
+Sarah: That's been an issue for a while. Mike, can you also profile the API response times?
+jen: I've been working on the new user onboarding flow. I'll have the mockups ready by Friday.
+Tom: We should add error tracking to the onboarding flow. I'll integrate Sentry before the next release.
+Sarah: Good idea. jen, please coordinate with Tom on the error states for each step.
+Mike: Also, we need to migrate the old user data. I'll write the migration script this week.
+Tom: Let's make sure we have rollback procedures for the migration. I will document the rollback steps.
+Sarah: Agreed. I will schedule a go/no-go meeting for next Thursday to review everything.
+jen: Should we also update the help documentation for the new onboarding?
+Sarah: Yes, definitely. jen, can you draft the help articles by next Monday?
+Tom: I think we should also run load tests before deploying. Let me set up the load testing environment.
+Mike: Sounds good. The current benchmarks show we can handle about 500 concurrent users. We need to aim for 2000.
+Sarah: Alright, let's follow up on all these items next Thursday. Thanks everyone.

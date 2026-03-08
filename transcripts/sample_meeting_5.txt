@@ -1,0 +1,17 @@
+PM: Quick standup. Let's go around. Dev1, what's your status?
+Dev1: I'm still working on the authentication module. It's about 80% done. I'll finish the OAuth integration by tomorrow.
+PM: Is there anything blocking you?
+Dev1: Not really, just need the API keys from the DevOps team. Can you ping them for me?
+PM: Sure, I will reach out to DevOps today and get you those keys.
+Dev2: I finished the search feature yesterday. Today I'm going to start on the notification system.
+PM: Great work. Any concerns about the notification system?
+Dev2: We need to decide between WebSockets and polling. I think we should go with WebSockets. I'll prepare a technical comparison document by end of day.
+QA: I've been testing the search feature. Found three critical bugs. Dev2, I'll send you the bug reports after this meeting.
+Dev2: OK, I'll fix those bugs before moving to notifications. Should be done by this afternoon.
+Designer: The new design system is ready. I need everyone to review the component library. Please take a look by Friday.
+PM: That's important. Everyone, please review the design system by Friday and share your feedback.
+QA: I also need to write test cases for the notification system. Dev2, can you share the API spec when it's ready?
+Dev2: Sure, I'll share the API documentation by Wednesday.
+PM: One last thing. We have the client demo next Monday. I need to prepare the demo environment. Let me handle that over the weekend.
+Designer: I should update the prototype to reflect the latest changes before the demo. I'll have the updated prototype ready by Saturday.
+PM: Perfect. Let's meet again tomorrow same time. That's it.

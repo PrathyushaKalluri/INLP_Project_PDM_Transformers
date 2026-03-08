@@ -1,0 +1,15 @@
+Speaker1: So the quarterly numbers look pretty good overall. Revenue is up 12% compared to last quarter.
+Speaker2: Yeah, the marketing campaign really helped drive new signups.
+Speaker3: I agree. The conversion rate from trial to paid went from 15% to 22%.
+Speaker1: That's great. The board will be happy with these numbers.
+Speaker2: We do have some churn in the enterprise segment though. We lost two large accounts last month.
+Speaker3: I heard about that. Apparently they switched to a competitor with better integrations.
+Speaker1: That's concerning. We should look into that.
+Speaker2: The product team is already working on more integrations. They mentioned something about a Salesforce connector.
+Speaker3: I think the real issue is response time from our support team. Both accounts complained about slow support.
+Speaker1: Hmm, that's a valid point. Well, let's keep monitoring the situation.
+Speaker2: Agreed. Anyway, the new pricing tier seems to be working well.
+Speaker3: Yes, the mid-tier plan is the most popular choice now.
+Speaker1: Good. Anything else to discuss?
+Speaker2: I think that covers it for today. Let's maybe revisit the churn issue next quarter.
+Speaker3: Sounds good. Have a good rest of the week.

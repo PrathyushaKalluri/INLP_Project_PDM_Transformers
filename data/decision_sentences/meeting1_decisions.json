@@ -1,0 +1,44 @@
+[
+  {
+    "sentence_id": 1,
+    "speaker": "Charlie",
+    "text": "The new gateway design uses rate limiting and circuit breakers.",
+    "decision_probability": 0.8628,
+    "decision_type": "commitment"
+  },
+  {
+    "sentence_id": 2,
+    "speaker": "Bob",
+    "text": "I need to benchmark the throughput by next Tuesday.",
+    "decision_probability": 0.8123,
+    "decision_type": "commitment"
+  },
+  {
+    "sentence_id": 6,
+    "speaker": "Charlie",
+    "text": "I should also update the architecture diagram to reflect the changes.",
+    "decision_probability": 0.9003,
+    "decision_type": "commitment"
+  },
+  {
+    "sentence_id": 8,
+    "speaker": "Charlie",
+    "text": "Sure, I will check the load balancer compatibility by Monday.",
+    "decision_probability": 0.7176,
+    "decision_type": "commitment"
+  },
+  {
+    "sentence_id": 9,
+    "speaker": "Diana",
+    "text": "I think we need to coordinate with the DevOps team on this.",
+    "decision_probability": 0.7871,
+    "decision_type": "commitment"
+  },
+  {
+    "sentence_id": 11,
+    "speaker": "Bob",
+    "text": "I'll reach out to the DevOps lead tomorrow.",
+    "decision_probability": 0.8876,
+    "decision_type": "commitment"
+  }
+]

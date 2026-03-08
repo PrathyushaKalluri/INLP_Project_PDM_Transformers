@@ -1,0 +1,38 @@
+[
+  {
+    "cluster_id": 0,
+    "summary": "Coordinate with the DevOps team on this.",
+    "evidence_sentences": [
+      9,
+      11
+    ]
+  },
+  {
+    "cluster_id": 1,
+    "summary": "I should update the architecture diagram to reflect the changes.",
+    "evidence_sentences": [
+      6
+    ]
+  },
+  {
+    "cluster_id": 2,
+    "summary": "Check the load balancer compatibility by Monday.",
+    "evidence_sentences": [
+      8
+    ]
+  },
+  {
+    "cluster_id": 3,
+    "summary": "Benchmark the throughput by next Tuesday.",
+    "evidence_sentences": [
+      2
+    ]
+  },
+  {
+    "cluster_id": 4,
+    "summary": "The new gateway design uses rate limiting and circuit breakers.",
+    "evidence_sentences": [
+      1
+    ]
+  }
+]
