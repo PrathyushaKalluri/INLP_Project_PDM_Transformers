@@ -24,7 +24,7 @@ Click Task → Show Evidence Sentence
 
 ## Completed Steps
 
-### ✅ STEP 1: Preprocessing
+### STEP 1: Preprocessing
 Converts raw transcripts into structured sentence-level data.
 
 **Input:** Raw transcript text
@@ -43,7 +43,7 @@ B: yeah let's finalize the pricing model
 
 **Implementation:** [PREPROCESSING_STEP1.md](PREPROCESSING_STEP1.md)
 
-### ✅ STEP 2: Decision Detection
+###  STEP 2: Decision Detection
 Identifies decision-related dialogue acts using transformer classification.
 
 **Input:** Preprocessed sentences  
@@ -64,7 +64,7 @@ Identifies decision-related dialogue acts using transformer classification.
 
 **Model:** BART-large-mnli (zero-shot classification)
 
-### ✅ STEP 3: Decision Clustering
+###  STEP 3: Decision Clustering
 Groups decision sentences into clusters, where each cluster represents one meeting decision.
 
 **Input:** Decision sentences from STEP 2
@@ -80,7 +80,7 @@ Groups decision sentences into clusters, where each cluster represents one meeti
 
 **Model:** all-mpnet-base-v2 (sentence embeddings) + AgglomerativeClustering
 
-### ✅ STEP 4: Decision Summarization
+###  STEP 4: Decision Summarization
 Converts decision clusters into concise, action-oriented decision statements.
 
 **Input:** Decision clusters from STEP 3
@@ -96,7 +96,7 @@ Converts decision clusters into concise, action-oriented decision statements.
 
 **Model:** distilbart-cnn-12-6 (abstractive summarization) + rule-based cleaning
 
-### ✅ STEP 5: Task Generation
+###  STEP 5: Task Generation
 Converts decision summaries into structured task objects with ML-extracted assignee and deadline.
 
 **Input:** Decision summaries from STEP 4 + transcript from STEP 1
@@ -112,7 +112,7 @@ Converts decision summaries into structured task objects with ML-extracted assig
 
 **Models:** roberta-base-squad2 (QA for assignee) + spaCy en_core_web_sm (NER for deadline)
 
-### ✅ STEP 6: Task Board UI
+###  STEP 6: Task Board UI
 Interactive web interface for viewing extracted tasks and tracing them to meeting transcript evidence.
 
 **Input:** Tasks from STEP 5 + transcript from STEP 1
@@ -462,25 +462,25 @@ alice_decisions = [d for d in decisions if d['speaker'] == 'A']
 
 All 6 steps are implemented and operational:
 
-- ✅ STEP 1: Preprocessing
-- ✅ STEP 2: Decision Detection
-- ✅ STEP 3: Decision Clustering
-- ✅ STEP 4: Decision Summarization
-- ✅ STEP 5: Task Generation
-- ✅ STEP 6: Task Board UI
+-  STEP 1: Preprocessing
+-  STEP 2: Decision Detection
+-  STEP 3: Decision Clustering
+-  STEP 4: Decision Summarization
+-  STEP 5: Task Generation
+-  STEP 6: Task Board UI
 
 ## Limitations & Design Choices
 
 ### STEP 1: Preprocessing
-- ✅ Handles multi-sentence utterances
-- ✅ Preserves speaker information
+-  Handles multi-sentence utterances
+-  Preserves speaker information
 - ❌ No NER (named entity recognition)
 - ❌ No timestamp extraction (can be added)
 
 ### STEP 2: Decision Detection
-- ✅ Uses transformer semantics (not rules)
-- ✅ Zero-shot (no training required)
-- ✅ Handles suggestion/decision ambiguity
+-  Uses transformer semantics (not rules)
+-  Zero-shot (no training required)
+-  Handles suggestion/decision ambiguity
 - ❌ No context beyond single sentence
 - ❌ No fine-tuning (can improve with labeled data)
 
@@ -591,3 +591,4 @@ To extend the pipeline:
 ## License
 
 (Add your license here)
+
