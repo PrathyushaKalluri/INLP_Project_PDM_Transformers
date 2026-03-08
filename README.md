@@ -474,15 +474,15 @@ All 6 steps are implemented and operational:
 ### STEP 1: Preprocessing
 -  Handles multi-sentence utterances
 -  Preserves speaker information
-- ❌ No NER (named entity recognition)
-- ❌ No timestamp extraction (can be added)
+-  No NER (named entity recognition)
+-  No timestamp extraction (can be added)
 
 ### STEP 2: Decision Detection
 -  Uses transformer semantics (not rules)
 -  Zero-shot (no training required)
 -  Handles suggestion/decision ambiguity
-- ❌ No context beyond single sentence
-- ❌ No fine-tuning (can improve with labeled data)
+-  No context beyond single sentence
+-  No fine-tuning (can improve with labeled data)
 
 ## Performance
 
@@ -591,4 +591,5 @@ To extend the pipeline:
 ## License
 
 (Add your license here)
+
 
