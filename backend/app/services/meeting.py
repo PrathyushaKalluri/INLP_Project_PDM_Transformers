@@ -23,7 +23,7 @@ class MeetingService:
 
     async def create(self, data: MeetingCreate, creator_id: PydanticObjectId) -> Meeting:
         project = await self.project_svc.get_or_404(data.project_id)
-        await self.project_svc._require_team_member(project.team_id, creator_id)
+        await self.project_svc._require_project_member(project.id, creator_id)
         return await MeetingRepository.create(
             project_id=project.id,
             team_id=project.team_id,
@@ -40,14 +40,14 @@ class MeetingService:
 
     async def update(self, meeting_id: str, data: MeetingUpdate, requester_id: PydanticObjectId) -> Meeting:
         meeting = await self.get_or_404(meeting_id)
-        await self.project_svc._require_team_member(meeting.team_id, requester_id)
+        await self.project_svc._require_project_member(meeting.project_id, requester_id)
         return await MeetingRepository.update(meeting, **data.model_dump(exclude_none=True))
 
     async def list_for_project(
         self, project_id: str, requester_id: PydanticObjectId, skip: int = 0, limit: int = 50
     ) -> list[Meeting]:
         project = await self.project_svc.get_or_404(project_id)
-        await self.project_svc._require_team_member(project.team_id, requester_id)
+        await self.project_svc._require_project_member(project.id, requester_id)
         return await MeetingRepository.list_for_project(project.id, skip, limit)
 
     async def list_for_team(
@@ -67,7 +67,7 @@ class MeetingService:
         uploader_id: PydanticObjectId,
     ) -> Transcript:
         meeting = await self.get_or_404(meeting_id)
-        await self.project_svc._require_team_member(meeting.team_id, uploader_id)
+        await self.project_svc._require_project_member(meeting.project_id, uploader_id)
 
         existing = await TranscriptRepository.get_by_meeting(meeting.id)
         if existing:

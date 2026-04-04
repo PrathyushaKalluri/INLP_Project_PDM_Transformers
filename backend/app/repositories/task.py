@@ -23,6 +23,7 @@ class TaskRepository:
     @staticmethod
     async def list_filtered(
         project_id: str | None = None,
+        project_ids: list[str] | None = None,
         team_id: str | None = None,
         meeting_id: str | None = None,
         assignee_id: str | None = None,
@@ -40,6 +41,8 @@ class TaskRepository:
         filters: dict[str, Any] = {}
         if project_id:
             filters["project_id"] = PydanticObjectId(project_id)
+        elif project_ids:
+            filters["project_id"] = {"$in": [PydanticObjectId(pid) for pid in project_ids]}
         if team_id:
             filters["team_id"] = PydanticObjectId(team_id)
         if meeting_id:
@@ -72,7 +75,14 @@ class TaskRepository:
     @staticmethod
     async def count_filtered(**kwargs) -> int:
         filters: dict[str, Any] = {}
-        for key in ("project_id", "team_id", "meeting_id", "assignee_id", "owner_id"):
+        if kwargs.get("project_id"):
+            filters["project_id"] = PydanticObjectId(kwargs["project_id"])
+        elif kwargs.get("project_ids"):
+            filters["project_id"] = {
+                "$in": [PydanticObjectId(pid) for pid in kwargs["project_ids"]]
+            }
+
+        for key in ("team_id", "meeting_id", "assignee_id", "owner_id"):
             if kwargs.get(key):
                 filters[key] = PydanticObjectId(kwargs[key])
         for key in ("status", "priority", "is_manual"):

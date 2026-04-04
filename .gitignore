@@ -1,0 +1,14 @@
+# LaTeX presentation build artifacts
+backend_database_presentation.aux
+backend_database_presentation.log
+backend_database_presentation.out
+backend_database_presentation.toc
+backend_database_presentation.pdf
+backend/api_endpoints.txt
+backend/mongodb_schema.txt
+backend_database_presentation.tex
+
+# Optional common LaTeX temp files
+*.fls
+*.fdb_latexmk
+*.synctex.gz

@@ -24,7 +24,8 @@ class TaskService:
 
     async def create_manual(self, data: TaskCreate, creator_id: PydanticObjectId) -> Task:
         project = await self.project_svc.get_or_404(data.project_id)
-        await self.project_svc._require_team_member(project.team_id, creator_id)
+        await self.project_svc._require_project_member(project.id, creator_id)
+        owner_id = PydanticObjectId(data.owner_id) if data.owner_id else getattr(project, "owner_id", project.created_by)
         task = Task(
             project_id=project.id,
             team_id=project.team_id,
@@ -33,7 +34,7 @@ class TaskService:
             status=data.status,
             priority=data.priority,
             assignee_id=PydanticObjectId(data.assignee_id) if data.assignee_id else None,
-            owner_id=PydanticObjectId(data.owner_id) if data.owner_id else None,
+            owner_id=owner_id,
             due_date=data.due_date,
             created_by=creator_id,
             is_manual=True,
@@ -50,7 +51,8 @@ class TaskService:
 
     async def update(self, task_id: str, data: TaskUpdate, requester_id: PydanticObjectId) -> Task:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
+        self._require_task_owner(task, requester_id)
 
         old_status = task.status
         updates = {k: v for k, v in data.model_dump().items() if v is not None}
@@ -66,20 +68,23 @@ class TaskService:
 
     async def delete(self, task_id: str, requester_id: PydanticObjectId) -> None:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
+        self._require_task_owner(task, requester_id)
         await task.delete()
 
     async def list_filtered(self, requester_id: PydanticObjectId, **filters) -> tuple[list[Task], int]:
         team_id = filters.get("team_id")
         project_id = filters.get("project_id")
         if project_id:
-            project = await self.project_svc.get_or_404(project_id)
-            await self.project_svc._require_team_member(project.team_id, requester_id)
+            await self.project_svc._require_project_member(project_id, requester_id)
         elif team_id:
             from app.services.team import TeamService
             team_svc = TeamService()
             if not await team_svc.is_member(team_id, requester_id):
                 raise forbidden("You are not a member of this team.")
+        else:
+            accessible_project_ids = await self.project_svc.list_ids_for_user(requester_id)
+            filters["project_ids"] = [str(pid) for pid in accessible_project_ids]
 
         skip = filters.pop("skip", 0)
         limit = filters.pop("limit", 50)
@@ -97,7 +102,7 @@ class TaskService:
     ) -> list[TaskSuggestion]:
         from app.services.meeting import MeetingService
         meeting = await MeetingService().get_or_404(meeting_id)
-        await self.project_svc._require_team_member(meeting.team_id, requester_id)
+        await self.project_svc._require_project_member(meeting.project_id, requester_id)
         return await TaskSuggestionRepository.list_for_meeting(meeting.id, status)
 
     async def update_suggestion(
@@ -175,21 +180,21 @@ class TaskService:
 
     async def get_evidence(self, task_id: str, requester_id: PydanticObjectId) -> list[TaskEvidence]:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
         return task.evidence
 
     # ── SubTasks ───────────────────────────────────────────────────────────────
 
     async def get_subtasks(self, task_id: str, requester_id: PydanticObjectId) -> list[SubTask]:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
         return task.subtasks
 
     async def create_subtask(
         self, task_id: str, data: SubTaskCreate, creator_id: PydanticObjectId
     ) -> SubTask:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, creator_id)
+        await self.project_svc._require_project_member(task.project_id, creator_id)
         subtask = SubTask(
             title=data.title,
             description=data.description,
@@ -204,7 +209,7 @@ class TaskService:
         self, task_id: str, subtask_id: str, data: SubTaskUpdate, requester_id: PydanticObjectId
     ) -> SubTask:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
         try:
             subtask_oid = PydanticObjectId(subtask_id)
         except Exception:
@@ -222,14 +227,14 @@ class TaskService:
 
     async def get_notes(self, task_id: str, requester_id: PydanticObjectId) -> list[TaskNote]:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
         return task.notes
 
     async def create_note(
         self, task_id: str, data: TaskNoteCreate, creator_id: PydanticObjectId
     ) -> TaskNote:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, creator_id)
+        await self.project_svc._require_project_member(task.project_id, creator_id)
         note = TaskNote(content=data.content, created_by=creator_id)
         task.notes.append(note)
         await task.save()
@@ -239,7 +244,7 @@ class TaskService:
 
     async def get_status_history(self, task_id: str, requester_id: PydanticObjectId) -> list[TaskStatusHistory]:
         task = await self.get_or_404(task_id)
-        await self.project_svc._require_team_member(task.team_id, requester_id)
+        await self.project_svc._require_project_member(task.project_id, requester_id)
         return task.status_history
 
     # ── Helpers ────────────────────────────────────────────────────────────────
@@ -267,4 +272,10 @@ class TaskService:
     async def _require_suggestion_access(self, suggestion: TaskSuggestion, requester_id: PydanticObjectId) -> None:
         from app.services.meeting import MeetingService
         meeting = await MeetingService().get_or_404(str(suggestion.meeting_id))
-        await self.project_svc._require_team_member(meeting.team_id, requester_id)
+        await self.project_svc._require_project_member(meeting.project_id, requester_id)
+
+    def _require_task_owner(self, task: Task, requester_id: PydanticObjectId) -> None:
+        if task.owner_id is None:
+            raise forbidden("Task has no owner. Set task owner before editing.")
+        if task.owner_id != requester_id:
+            raise forbidden("Only task owner can edit or delete this task.")

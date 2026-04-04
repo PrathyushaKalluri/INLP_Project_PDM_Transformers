@@ -72,6 +72,32 @@ async def list_tasks(
     }
 
 
+@router.get("/my", response_model=dict)
+async def list_my_tasks(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    status: TaskStatus | None = Query(None),
+    priority: TaskPriority | None = Query(None),
+    current_user: User = Depends(get_current_user),
+):
+    svc = TaskService()
+    skip = (page - 1) * limit
+    tasks, total = await svc.list_filtered(
+        requester_id=current_user.id,
+        assignee_id=str(current_user.id),
+        status=status,
+        priority=priority,
+        skip=skip,
+        limit=limit,
+    )
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "items": [TaskResponse.model_validate(t) for t in tasks],
+    }
+
+
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: str,
@@ -79,7 +105,7 @@ async def get_task(
 ):
     svc = TaskService()
     task = await svc.get_or_404(task_id)
-    await svc.project_svc._require_team_member(task.team_id, current_user.id)
+    await svc.project_svc._require_project_member(task.project_id, current_user.id)
     return task
 
 

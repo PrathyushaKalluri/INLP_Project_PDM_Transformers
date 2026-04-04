@@ -48,7 +48,9 @@ async def get_meeting(
     current_user: User = Depends(get_current_user),
 ):
     svc = MeetingService()
-    return await svc.get_or_404(meeting_id)
+    meeting = await svc.get_or_404(meeting_id)
+    await svc.project_svc._require_project_member(meeting.project_id, current_user.id)
+    return meeting
 
 
 @router.patch("/{meeting_id}", response_model=MeetingResponse)
@@ -96,6 +98,8 @@ async def get_transcript_status(
     current_user: User = Depends(get_current_user),
 ):
     svc = MeetingService()
+    meeting = await svc.get_or_404(meeting_id)
+    await svc.project_svc._require_project_member(meeting.project_id, current_user.id)
     return await svc.get_transcript_status(meeting_id)
 
 
@@ -105,6 +109,8 @@ async def get_meeting_summary(
     current_user: User = Depends(get_current_user),
 ):
     svc = MeetingService()
+    meeting = await svc.get_or_404(meeting_id)
+    await svc.project_svc._require_project_member(meeting.project_id, current_user.id)
     return await svc.get_summary(meeting_id)
 
 
