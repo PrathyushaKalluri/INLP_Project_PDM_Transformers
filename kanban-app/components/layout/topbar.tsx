@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { FilterPanel } from "@/components/tasks/filter-panel";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,6 +61,9 @@ export function Topbar() {
       <FilterPanel />
 
       <NotificationsPanel />
+
+      <BrandLogo variant="full" className="hidden md:block h-8 w-auto px-2 py-1" />
+      <BrandLogo variant="icon" className="block md:hidden h-8 w-auto px-2 py-1" />
     </header>
   );
 }

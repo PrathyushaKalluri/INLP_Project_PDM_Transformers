@@ -1,0 +1,10 @@
+
+> kanban-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.2.130.98:3000
+✓ Ready in 430ms
+
+ GET /dashboard/kanban 200 in 443ms (next.js: 159ms, application-code: 284ms)

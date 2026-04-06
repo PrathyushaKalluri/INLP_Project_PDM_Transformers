@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,10 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
+        <CardHeader className="space-y-3">
+          <div className="mx-auto rounded-xl border border-border/80 bg-muted/50 p-3">
+            <BrandLogo variant="full" className="h-9 w-auto px-1 py-1" />
+          </div>
           <CardTitle className="text-3xl font-semibold">Signup</CardTitle>
         </CardHeader>
         <CardContent>
