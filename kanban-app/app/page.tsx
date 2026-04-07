@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { HeroSection } from "@/components/landing/HeroSection";
 
 export default function HomePage() {
-  redirect("/auth/login");
+  return <HeroSection />;
 }
