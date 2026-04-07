@@ -4,17 +4,19 @@ import { AvatarGroup } from "@/components/shared/avatar-group";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { getTaskUrgency } from "@/lib/tasks";
-import { mockUsers } from "@/store/useAppStore";
-import type { Task } from "@/types";
+import type { Task, User } from "@/types";
 
 interface TaskCardProps {
   task: Task;
   cardIndex?: number;
+  usersMap: Map<string, User>;
 }
 
-export function TaskCard({ task, cardIndex = 0 }: TaskCardProps) {
+export function TaskCard({ task, cardIndex = 0, usersMap }: TaskCardProps) {
   const urgency = getTaskUrgency(task.deadline);
-  const assignees = mockUsers.filter((user) => task.assigneeIds.includes(user.id));
+  const assignees = task.assigneeIds
+    .map((id) => usersMap.get(id))
+    .filter((entry): entry is User => Boolean(entry));
 
   const urgencyClass =
     urgency === "overdue"

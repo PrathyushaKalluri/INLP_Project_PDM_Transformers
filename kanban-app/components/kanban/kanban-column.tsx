@@ -1,7 +1,7 @@
 import { AddTaskModal } from "@/components/tasks/add-task-modal";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Task, TaskStatus } from "@/types";
+import type { Task, TaskStatus, User } from "@/types";
 
 import { TaskCard } from "./task-card";
 
@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   projectId: string;
+  usersMap: Map<string, User>;
   loading?: boolean;
 }
 
@@ -18,6 +19,7 @@ export function KanbanColumn({
   status,
   tasks,
   projectId,
+  usersMap,
   loading,
 }: KanbanColumnProps) {
   const columnDelayClass =
@@ -43,7 +45,7 @@ export function KanbanColumn({
               <Skeleton key={`skeleton-${index}`} className="h-28 w-full" />
             ))
           : tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} cardIndex={index} />
+              <TaskCard key={task.id} task={task} cardIndex={index} usersMap={usersMap} />
             ))}
 
         {!loading && tasks.length === 0 ? (

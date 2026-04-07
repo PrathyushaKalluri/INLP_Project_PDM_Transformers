@@ -3,21 +3,47 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { signup } from "@/lib/api/auth.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { getErrorMessage } from "@/lib/utils";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function SignupPage() {
   const router = useRouter();
-  const signup = useAppStore((state) => state.signup);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const setUser = useAppStore((state) => state.setUser);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  const signupMutation = useMutation({
+    mutationFn: signup,
+    onSuccess: (user) => {
+      setInlineError(null);
+      setUser(user);
+      queryClient.setQueryData(queryKeys.authMe, user);
+      router.replace("/dashboard/kanban");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error);
+      setInlineError(message);
+      toast({
+        title: "Signup failed",
+        description: message,
+      });
+    },
+  });
 
   const canSubmit = useMemo(
     () =>
@@ -28,14 +54,16 @@ export default function SignupPage() {
     [email, password, confirmPassword]
   );
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSubmit) {
       return;
     }
 
-    signup(email);
-    router.replace("/dashboard/kanban");
+    await signupMutation.mutateAsync({
+      email: email.trim(),
+      password,
+    });
   };
 
   return (
@@ -82,9 +110,14 @@ export default function SignupPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={!canSubmit}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!canSubmit || signupMutation.isPending}
+            >
               Signup
             </Button>
+            {inlineError ? <p className="text-sm text-danger">{inlineError}</p> : null}
           </form>
 
           <p className="mt-4 text-sm text-text-secondary">

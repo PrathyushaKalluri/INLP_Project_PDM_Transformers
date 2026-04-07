@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAppStore } from "@/store/useAppStore";
+import { getNotifications, markNotificationsRead } from "@/lib/api/notifications.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { getErrorMessage } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 
 export function NotificationsPanel() {
-  const notifications = useAppStore((state) => state.notifications);
-  const markNotificationsRead = useAppStore((state) => state.markNotificationsRead);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.notifications,
+    queryFn: getNotifications,
+  });
+
+  const notifications = notificationsQuery.data ?? [];
+
+  const markReadMutation = useMutation({
+    mutationFn: () => markNotificationsRead(notifications.map((item) => item.id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update notifications",
+        description: getErrorMessage(error),
+      });
+    },
+  });
 
   const unread = notifications.filter((item) => !item.read).length;
 
@@ -35,7 +59,7 @@ export function NotificationsPanel() {
       <DropdownMenuContent align="end" className="w-[22rem]">
         <div className="flex items-center justify-between p-1">
           <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-          <Button variant="ghost" size="sm" onClick={markNotificationsRead}>
+          <Button variant="ghost" size="sm" onClick={() => markReadMutation.mutate()}>
             Mark all read
           </Button>
         </div>

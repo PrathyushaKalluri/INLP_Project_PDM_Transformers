@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppStore, mockUsers } from "@/store/useAppStore";
+import { getProjects } from "@/lib/api/projects.api";
+import { buildUserDirectory } from "@/lib/api/user-directory";
+import { createTask } from "@/lib/api/tasks.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { getErrorMessage } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
+import { useAppStore } from "@/store/useAppStore";
+import type { User } from "@/types";
 
 interface AddTaskModalProps {
   projectId: string;
@@ -28,12 +36,42 @@ export function AddTaskModal({
   status,
   triggerLabel = "+ Add Task",
 }: AddTaskModalProps) {
-  const addTask = useAppStore((state) => state.addTask);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const user = useAppStore((state) => state.user);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
   const [assignees, setAssignees] = useState<string[]>([]);
+
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
+
+  const users: User[] = useMemo(() => {
+    const project = (projectsQuery.data ?? []).find((entry) => entry.id === projectId);
+    const directory = buildUserDirectory(user, project?.participants ?? []);
+    return Array.from(directory.values());
+  }, [projectsQuery.data, projectId, user]);
+
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tasks(projectId),
+      });
+      reset();
+      setOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to save task",
+        description: getErrorMessage(error),
+      });
+    },
+  });
 
   const canSubmit = useMemo(
     () => title.trim().length > 2 && description.trim().length > 4 && deadline,
@@ -53,12 +91,12 @@ export function AddTaskModal({
     setAssignees([]);
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!canSubmit) {
       return;
     }
 
-    addTask({
+    await createTaskMutation.mutateAsync({
       projectId,
       title: title.trim(),
       description: description.trim(),
@@ -67,9 +105,6 @@ export function AddTaskModal({
       transcriptReference: "Manual Task",
       status,
     });
-
-    reset();
-    setOpen(false);
   };
 
   return (
@@ -121,7 +156,7 @@ export function AddTaskModal({
           <div className="grid gap-2">
             <Label>Assignees</Label>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {mockUsers.map((user) => {
+              {users.map((user) => {
                 const active = assignees.includes(user.id);
                 return (
                   <button
@@ -146,7 +181,7 @@ export function AddTaskModal({
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={!canSubmit}>
+          <Button onClick={onSubmit} disabled={!canSubmit || createTaskMutation.isPending}>
             Save task
           </Button>
         </DialogFooter>

@@ -1,21 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { FilterPanel } from "@/components/tasks/filter-panel";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
+import { getProjects } from "@/lib/api/projects.api";
+import { queryKeys } from "@/lib/api/query-keys";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppStore } from "@/store/useAppStore";
 
 export function Topbar() {
-  const projects = useAppStore((state) => state.projects);
   const selectedProject = useAppStore((state) => state.selectedProject);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
   const filters = useAppStore((state) => state.filters);
   const setFilters = useAppStore((state) => state.setFilters);
+
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
+
+  const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+
+  useEffect(() => {
+    if (!selectedProject && projects.length > 0) {
+      setSelectedProject(projects[0].id);
+    }
+  }, [projects, selectedProject, setSelectedProject]);
 
   const hasProjects = projects.length > 0;
 

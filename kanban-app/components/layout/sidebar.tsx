@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
   FileText,
@@ -23,6 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { logout } from "@/lib/api/auth.api";
+import { getProjects } from "@/lib/api/projects.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { getTasks } from "@/lib/api/tasks.api";
+import { getTranscripts } from "@/lib/api/transcripts.api";
+import { getErrorMessage } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store/useAppStore";
 
 interface SidebarProps {
@@ -31,39 +39,74 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const user = useAppStore((state) => state.user);
-  const projects = useAppStore((state) => state.projects);
   const selectedProject = useAppStore((state) => state.selectedProject);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
-  const tasks = useAppStore((state) => state.tasks);
-  const transcripts = useAppStore((state) => state.transcripts);
-  const logout = useAppStore((state) => state.logout);
+  const logoutLocal = useAppStore((state) => state.logoutLocal);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  const exportWorkspace = () => {
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      projects,
-      tasks,
-      transcripts,
-    };
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "workspace-export.json";
-    link.click();
-    URL.revokeObjectURL(url);
+  const projects = projectsQuery.data ?? [];
+
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      logoutLocal();
+      queryClient.clear();
+      router.replace("/auth/login");
+    },
+    onError: (error) => {
+      toast({
+        title: "Logout failed",
+        description: getErrorMessage(error),
+      });
+      logoutLocal();
+      queryClient.clear();
+      router.replace("/auth/login");
+    },
+  });
+
+  const exportWorkspace = async () => {
+    try {
+      const [tasksByProject, transcriptsByProject] = await Promise.all([
+        Promise.all(projects.map((project) => getTasks(project.id))),
+        Promise.all(projects.map((project) => getTranscripts(project.id))),
+      ]);
+
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        projects,
+        tasks: tasksByProject.flat(),
+        transcripts: transcriptsByProject.flat(),
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "workspace-export.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: getErrorMessage(error),
+      });
+    }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace("/auth/login");
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
   };
 
   const isManager = user?.role === "manager";
@@ -198,7 +241,7 @@ export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
 
         <button
           type="button"
-          onClick={exportWorkspace}
+          onClick={() => void exportWorkspace()}
           className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-text-secondary hover:bg-muted"
         >
           <Download className="h-4 w-4" />

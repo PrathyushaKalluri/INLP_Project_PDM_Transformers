@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ArrowLeft } from "lucide-react";
 
@@ -11,11 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { getProjects } from "@/lib/api/projects.api";
+import { startProcessing as startProcessingApi } from "@/lib/api/processing.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { createTranscript } from "@/lib/api/transcripts.api";
+import { getErrorMessage } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function UploadPage() {
   const router = useRouter();
-  const projects = useAppStore((state) => state.projects);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const selectedProject = useAppStore((state) => state.selectedProject);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
   const startProcessing = useAppStore((state) => state.startProcessing);
@@ -23,19 +31,58 @@ export default function UploadPage() {
 
   const [transcript, setTranscript] = useState("");
 
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
+
+  const projects = projectsQuery.data ?? [];
+
+  const uploadMutation = useMutation({
+    mutationFn: async ({ projectId, content }: { projectId: string; content: string }) => {
+      const createdTranscript = await createTranscript({
+        projectId,
+        content,
+      });
+      const started = await startProcessingApi({
+        transcriptId: createdTranscript.id,
+        projectId,
+      });
+
+      return {
+        transcript: createdTranscript,
+        jobId: started.jobId,
+      };
+    },
+    onSuccess: ({ transcript: createdTranscript, jobId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transcripts(createdTranscript.projectId) });
+      useAppStore.getState().setActiveTranscript(createdTranscript.id);
+      resetProcessing();
+      startProcessing(jobId, createdTranscript.id);
+      router.push("/dashboard/processing");
+    },
+    onError: (error) => {
+      toast({
+        title: "Transcript upload failed",
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
   const canSubmit = useMemo(
     () => Boolean(selectedProject) && transcript.trim().length > 20,
     [selectedProject, transcript]
   );
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedProject || !canSubmit) {
       return;
     }
 
-    resetProcessing();
-    startProcessing(selectedProject, transcript.trim());
-    router.push("/dashboard/processing");
+    await uploadMutation.mutateAsync({
+      projectId: selectedProject,
+      content: transcript.trim(),
+    });
   };
 
   return (
@@ -83,7 +130,7 @@ export default function UploadPage() {
               Back
             </Button>
 
-            <Button onClick={handleSubmit} disabled={!canSubmit}>
+            <Button onClick={handleSubmit} disabled={!canSubmit || uploadMutation.isPending}>
               Extract Action Items
             </Button>
           </div>

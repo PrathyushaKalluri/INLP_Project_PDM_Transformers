@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useToast } from "@/components/ui/use-toast";
-import { useAppStore } from "@/store/useAppStore";
+import { getNotifications } from "@/lib/api/notifications.api";
+import { queryKeys } from "@/lib/api/query-keys";
 
 export function NotificationToasts() {
-  const notifications = useAppStore((state) => state.notifications);
   const { toast } = useToast();
+  const notificationsQuery = useQuery({
+    queryKey: queryKeys.notifications,
+    queryFn: getNotifications,
+  });
+  const notifications = useMemo(() => notificationsQuery.data ?? [], [notificationsQuery.data]);
   const seen = useRef<Set<string>>(new Set());
 
   useEffect(() => {

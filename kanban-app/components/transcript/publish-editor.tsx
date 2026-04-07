@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,28 +10,53 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { getProjects } from "@/lib/api/projects.api";
+import { queryKeys } from "@/lib/api/query-keys";
+import { getTasks, updateTask } from "@/lib/api/tasks.api";
+import { getTranscriptById, publishSummary } from "@/lib/api/transcripts.api";
+import { getErrorMessage } from "@/lib/utils";
 import { useAppStore } from "@/store/useAppStore";
 
 export function PublishEditor() {
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const projects = useAppStore((state) => state.projects);
   const activeTranscriptId = useAppStore((state) => state.activeTranscriptId);
-  const transcripts = useAppStore((state) => state.transcripts);
-  const tasks = useAppStore((state) => state.tasks);
-  const updateTask = useAppStore((state) => state.updateTask);
-  const updateTranscript = useAppStore((state) => state.updateTranscript);
-  const addNotification = useAppStore((state) => state.addNotification);
 
-  const transcript = useMemo(
-    () => transcripts.find((item) => item.id === activeTranscriptId) ?? transcripts[0],
-    [transcripts, activeTranscriptId]
-  );
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects,
+    queryFn: getProjects,
+  });
 
-  const [summary, setSummary] = useState(transcript?.summary ?? "");
+  const transcriptQuery = useQuery({
+    queryKey: activeTranscriptId
+      ? queryKeys.transcript(activeTranscriptId)
+      : ["transcript", "none"],
+    queryFn: () => getTranscriptById(activeTranscriptId ?? ""),
+    enabled: Boolean(activeTranscriptId),
+  });
+
+  const transcript = transcriptQuery.data;
+
+  const tasksQuery = useQuery({
+    queryKey: transcript?.projectId
+      ? queryKeys.tasks(transcript.projectId)
+      : ["tasks", "none"],
+    queryFn: () => getTasks(transcript?.projectId ?? ""),
+    enabled: Boolean(transcript?.projectId),
+  });
+
+  const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
+  const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
+
+  const [summaryDrafts, setSummaryDrafts] = useState<Record<string, string>>({});
   const [meetingTitle, setMeetingTitle] = useState("Weekly Sync");
   const [meetingDate, setMeetingDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const summary = transcript
+    ? (summaryDrafts[transcript.id] ?? transcript.summary)
+    : "";
 
   const relatedTasks = useMemo(() => {
     if (!transcript) {
@@ -40,23 +66,76 @@ export function PublishEditor() {
     return tasks.filter((task) => transcript.actionItemIds.includes(task.id));
   }, [tasks, transcript]);
 
-  const currentProject = projects.find((project) => project.id === transcript?.projectId);
+  const currentProject = useMemo(
+    () => projects.find((project) => project.id === transcript?.projectId),
+    [projects, transcript?.projectId]
+  );
 
-  const publish = () => {
+  const updateTaskMutation = useMutation({
+    mutationFn: ({
+      taskId,
+      payload,
+    }: {
+      taskId: string;
+      payload: { title?: string; description?: string };
+    }) => updateTask(taskId, payload),
+    onSuccess: () => {
+      if (transcript?.projectId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks(transcript.projectId),
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update task",
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: publishSummary,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
+      toast({
+        title: "Published",
+        description: `Published summary for ${currentProject?.name ?? "project"}.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Publish failed",
+        description: getErrorMessage(error),
+      });
+    },
+  });
+
+  const publish = async () => {
     if (!transcript) {
       return;
     }
 
-    updateTranscript(transcript.id, { summary });
-    addNotification({
-      message: `Published summary for ${currentProject?.name ?? "project"}.`,
-      type: "success",
-    });
-    toast({
-      title: "Published",
-      description: "Meeting summary and action items were published.",
+    await publishMutation.mutateAsync({
+      projectId: transcript.projectId,
+      summary,
+      actionItems: relatedTasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+      })),
     });
   };
+
+  if (transcriptQuery.isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-sm text-text-secondary">Loading transcript...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!transcript) {
     return (
@@ -77,7 +156,9 @@ export function PublishEditor() {
           <h2 className="text-2xl font-semibold text-text-primary">Publish Review</h2>
           <p className="text-sm text-text-secondary">Finalize summary and editable action items.</p>
         </div>
-        <Button onClick={publish}>Publish</Button>
+        <Button onClick={publish} disabled={publishMutation.isPending}>
+          Publish
+        </Button>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -111,7 +192,15 @@ export function PublishEditor() {
                 id="meeting-summary"
                 className="min-h-[15rem]"
                 value={summary}
-                onChange={(event) => setSummary(event.target.value)}
+                onChange={(event) => {
+                  if (!transcript) {
+                    return;
+                  }
+                  setSummaryDrafts((prev) => ({
+                    ...prev,
+                    [transcript.id]: event.target.value,
+                  }));
+                }}
               />
             </div>
 
@@ -139,7 +228,10 @@ export function PublishEditor() {
                       id={`title-${task.id}`}
                       value={task.title}
                       onChange={(event) =>
-                        updateTask(task.id, { title: event.target.value })
+                        updateTaskMutation.mutate({
+                          taskId: task.id,
+                          payload: { title: event.target.value },
+                        })
                       }
                     />
                   </div>
@@ -149,7 +241,10 @@ export function PublishEditor() {
                       id={`description-${task.id}`}
                       value={task.description}
                       onChange={(event) =>
-                        updateTask(task.id, { description: event.target.value })
+                        updateTaskMutation.mutate({
+                          taskId: task.id,
+                          payload: { description: event.target.value },
+                        })
                       }
                     />
                   </div>

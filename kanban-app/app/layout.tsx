@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import "./globals.css";
+import { QueryProvider } from "@/components/shared/query-provider";
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({
@@ -35,8 +36,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: bootThemeScript }} />
       </head>
       <body>
-        {children}
-        <Toaster />
+        <QueryProvider>
+          {children}
+          <Toaster />
+        </QueryProvider>
       </body>
     </html>
   );
