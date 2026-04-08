@@ -1,0 +1,79 @@
+[
+  {
+    "task_id": "task_1",
+    "task": "Let's start with the sprint planning for this week.",
+    "assignee": "Alice",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Let's start with the sprint planning for this week.",
+      "speaker": "Alice"
+    }
+  },
+  {
+    "task_id": "task_2",
+    "task": "I will handle the API refactor by Friday.",
+    "assignee": "Bob",
+    "deadline": "Friday",
+    "confidence": 0.9500000000000001,
+    "evidence": {
+      "text": "I will handle the API refactor by Friday.",
+      "speaker": "Bob"
+    }
+  },
+  {
+    "task_id": "task_3",
+    "task": "Can you write the integration tests for the new endpoints?",
+    "assignee": "Alice",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Charlie, can you write the integration tests for the new endpoints?",
+      "speaker": "Alice"
+    }
+  },
+  {
+    "task_id": "task_4",
+    "task": "I will write the tests by Wednesday.",
+    "assignee": "Charlie",
+    "deadline": "Wednesday",
+    "confidence": 0.9500000000000001,
+    "evidence": {
+      "text": "Yes, I will write the tests by Wednesday.",
+      "speaker": "Charlie"
+    }
+  },
+  {
+    "task_id": "task_5",
+    "task": "Diana, please update the project documentation with the new API specs.",
+    "assignee": "Diana",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Diana, please update the project documentation with the new API specs.",
+      "speaker": "Alice"
+    }
+  },
+  {
+    "task_id": "task_6",
+    "task": "I'll update the docs by Thursday.",
+    "assignee": "Diana",
+    "deadline": "Thursday",
+    "confidence": 0.9500000000000001,
+    "evidence": {
+      "text": "I'll update the docs by Thursday.",
+      "speaker": "Diana"
+    }
+  },
+  {
+    "task_id": "task_7",
+    "task": "I'll look into the CI/CD pipeline and fix the failing builds.",
+    "assignee": "Bob",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
+      "speaker": "Bob"
+    }
+  }
+]

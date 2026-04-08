@@ -1,0 +1,17 @@
+[
+  {
+    "text": "Let's start with the sprint planning for this week.",
+    "is_decision": true,
+    "decision_type": "decision"
+  },
+  {
+    "text": "I will handle the API refactor by Friday.",
+    "is_decision": true,
+    "decision_type": "commitment"
+  },
+  {
+    "text": "Can you write the integration tests for the new endpoints?",
+    "is_decision": true,
+    "decision_type": "request"
+  }
+]

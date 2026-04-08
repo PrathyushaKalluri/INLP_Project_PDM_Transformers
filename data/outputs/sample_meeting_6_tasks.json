@@ -1,0 +1,167 @@
+[
+  {
+    "task_id": "task_1",
+    "task": "Revenue is up 12% compared to last quarter.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Revenue is up 12% compared to last quarter.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_2",
+    "task": "Yeah, the marketing campaign really helped drive new signups.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Yeah, the marketing campaign really helped drive new signups.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "task_id": "task_3",
+    "task": "The conversion rate from trial to paid went from 15% to 22%.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "The conversion rate from trial to paid went from 15% to 22%.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "task_id": "task_4",
+    "task": "The board will be happy with these numbers.",
+    "assignee": "Who is responsible for performing this task?Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "The board will be happy with these numbers.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_5",
+    "task": "We do have some churn in the enterprise segment though.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "We do have some churn in the enterprise segment though.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "task_id": "task_6",
+    "task": "Apparently they switched to a competitor with better integrations.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Apparently they switched to a competitor with better integrations.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "task_id": "task_7",
+    "task": "That's concerning.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "That's concerning.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_8",
+    "task": "We should look into that.",
+    "assignee": "Who is responsible for performing this task?Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "We should look into that.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_9",
+    "task": "The product team is already working on more integrations.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "The product team is already working on more integrations.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "task_id": "task_10",
+    "task": "They mentioned something about a Salesforce connector.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "They mentioned something about a Salesforce connector.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "task_id": "task_11",
+    "task": "Let's monitor the situation.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Well, let's keep monitoring the situation.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_12",
+    "task": "Anyway, the new pricing tier seems to be working well.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Anyway, the new pricing tier seems to be working well.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "task_id": "task_13",
+    "task": "Yes, the mid-tier plan is the most popular choice now.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Yes, the mid-tier plan is the most popular choice now.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "task_id": "task_14",
+    "task": "Anything else to discuss.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.89,
+    "evidence": {
+      "text": "Anything else to discuss?",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "task_id": "task_15",
+    "task": "Let's maybe revisit the churn issue next quarter.",
+    "assignee": "Speaker2",
+    "deadline": "next quarter",
+    "confidence": 0.9500000000000001,
+    "evidence": {
+      "text": "Let's maybe revisit the churn issue next quarter.",
+      "speaker": "Speaker2"
+    }
+  }
+]

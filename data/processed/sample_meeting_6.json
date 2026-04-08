@@ -1,0 +1,332 @@
+[
+  {
+    "sentence_id": 1,
+    "speaker": "Speaker1",
+    "text": "So the quarterly numbers look pretty good overall.",
+    "root_verb": "look",
+    "object": null,
+    "subject": "quarterly numbers",
+    "turn_id": 1,
+    "triplet_confidence": 0.9,
+    "triplet_flags": [
+      "null_object"
+    ]
+  },
+  {
+    "sentence_id": 2,
+    "speaker": "Speaker1",
+    "text": "Revenue is up 12% compared to last quarter.",
+    "root_verb": "be",
+    "object": "last quarter",
+    "subject": "Revenue",
+    "turn_id": 1,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 3,
+    "speaker": "Speaker2",
+    "text": "Yeah, the marketing campaign really helped drive new signups.",
+    "root_verb": "help",
+    "object": "new signups",
+    "subject": "marketing campaign",
+    "turn_id": 2,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 4,
+    "speaker": "Speaker3",
+    "text": "I agree.",
+    "root_verb": "agree",
+    "object": null,
+    "subject": "I",
+    "turn_id": 3,
+    "triplet_confidence": 0.9,
+    "triplet_flags": [
+      "null_object"
+    ]
+  },
+  {
+    "sentence_id": 5,
+    "speaker": "Speaker3",
+    "text": "The conversion rate from trial to paid went from 15% to 22%.",
+    "root_verb": "go",
+    "object": "trial",
+    "subject": "conversion rate",
+    "turn_id": 3,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 6,
+    "speaker": "Speaker1",
+    "text": "That's great.",
+    "root_verb": "be",
+    "object": "last quarter",
+    "subject": "That",
+    "turn_id": 4,
+    "object_resolved": true,
+    "triplet_confidence": 0.45,
+    "triplet_flags": [
+      "resolved_via_context",
+      "unresolved_pronoun_subject",
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 7,
+    "speaker": "Speaker1",
+    "text": "The board will be happy with these numbers.",
+    "root_verb": "be",
+    "object": "these numbers",
+    "subject": "board",
+    "turn_id": 4,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 8,
+    "speaker": "Speaker2",
+    "text": "We do have some churn in the enterprise segment though.",
+    "root_verb": "have",
+    "object": "some churn",
+    "subject": "We",
+    "turn_id": 5,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 9,
+    "speaker": "Speaker2",
+    "text": "We lost two large accounts last month.",
+    "root_verb": "lose",
+    "object": "large accounts",
+    "subject": "We",
+    "turn_id": 5,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 10,
+    "speaker": "Speaker3",
+    "text": "I heard about that.",
+    "root_verb": "hear",
+    "object": "that",
+    "subject": "I",
+    "turn_id": 6,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "unresolved_pronoun_object"
+    ]
+  },
+  {
+    "sentence_id": 11,
+    "speaker": "Speaker3",
+    "text": "Apparently they switched to a competitor with better integrations.",
+    "root_verb": "switch",
+    "object": "a competitor",
+    "subject": "they",
+    "turn_id": 6,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 12,
+    "speaker": "Speaker1",
+    "text": "That's concerning.",
+    "root_verb": "concern",
+    "object": "these numbers",
+    "subject": "That",
+    "turn_id": 7,
+    "object_resolved": true,
+    "triplet_confidence": 0.6,
+    "triplet_flags": [
+      "resolved_via_context",
+      "unresolved_pronoun_subject"
+    ]
+  },
+  {
+    "sentence_id": 13,
+    "speaker": "Speaker1",
+    "text": "We should look into that.",
+    "root_verb": "look",
+    "object": "that",
+    "subject": "We",
+    "turn_id": 7,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "unresolved_pronoun_object"
+    ]
+  },
+  {
+    "sentence_id": 14,
+    "speaker": "Speaker2",
+    "text": "The product team is already working on more integrations.",
+    "root_verb": "work",
+    "object": "more integrations",
+    "subject": "product team",
+    "turn_id": 8,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 15,
+    "speaker": "Speaker2",
+    "text": "They mentioned something about a Salesforce connector.",
+    "root_verb": "mention",
+    "object": "something",
+    "subject": "They",
+    "turn_id": 8,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 16,
+    "speaker": "Speaker3",
+    "text": "I think the real issue is response time from our support team.",
+    "root_verb": "think",
+    "object": "response time",
+    "subject": "I",
+    "turn_id": 9,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 17,
+    "speaker": "Speaker3",
+    "text": "Both accounts complained about slow support.",
+    "root_verb": "complain",
+    "object": "slow support",
+    "subject": "accounts",
+    "turn_id": 9,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 18,
+    "speaker": "Speaker1",
+    "text": "Hmm, that's a valid point.",
+    "root_verb": "be",
+    "object": "a valid point",
+    "subject": "that",
+    "turn_id": 10,
+    "triplet_confidence": 0.65,
+    "triplet_flags": [
+      "unresolved_pronoun_subject",
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 19,
+    "speaker": "Speaker1",
+    "text": "Well, let's keep monitoring the situation.",
+    "root_verb": "keep",
+    "object": "the situation",
+    "subject": "'s",
+    "turn_id": 10,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 21,
+    "speaker": "Speaker2",
+    "text": "Anyway, the new pricing tier seems to be working well.",
+    "root_verb": "seem",
+    "object": "something",
+    "subject": "pricing new tier",
+    "turn_id": 11,
+    "object_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  },
+  {
+    "sentence_id": 22,
+    "speaker": "Speaker3",
+    "text": "Yes, the mid-tier plan is the most popular choice now.",
+    "root_verb": "be",
+    "object": "the popular choice",
+    "subject": "tier - mid plan",
+    "turn_id": 12,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 23,
+    "speaker": "Speaker1",
+    "text": "Good.",
+    "root_verb": null,
+    "object": null,
+    "subject": "Speaker1",
+    "turn_id": 13,
+    "triplet_confidence": 0.9,
+    "triplet_flags": [
+      "null_object"
+    ]
+  },
+  {
+    "sentence_id": 24,
+    "speaker": "Speaker1",
+    "text": "Anything else to discuss?",
+    "root_verb": null,
+    "object": null,
+    "subject": "Speaker1",
+    "turn_id": 13,
+    "triplet_confidence": 0.9,
+    "triplet_flags": [
+      "null_object"
+    ]
+  },
+  {
+    "sentence_id": 25,
+    "speaker": "Speaker2",
+    "text": "I think that covers it for today.",
+    "root_verb": "think",
+    "object": "it",
+    "subject": "I",
+    "turn_id": 14,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "unresolved_pronoun_object"
+    ]
+  },
+  {
+    "sentence_id": 26,
+    "speaker": "Speaker2",
+    "text": "Let's maybe revisit the churn issue next quarter.",
+    "root_verb": "revisit",
+    "object": "the churn issue",
+    "subject": "team",
+    "turn_id": 14,
+    "subject_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  },
+  {
+    "sentence_id": 28,
+    "speaker": "Speaker3",
+    "text": "Have a good rest of the week.",
+    "root_verb": "have",
+    "object": "a good rest",
+    "subject": "Speaker3",
+    "turn_id": 15,
+    "triplet_confidence": 0.85,
+    "triplet_flags": [
+      "weak_root_verb"
+    ]
+  }
+]

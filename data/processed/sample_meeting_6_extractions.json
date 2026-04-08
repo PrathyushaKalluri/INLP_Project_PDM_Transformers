@@ -1,0 +1,152 @@
+[
+  {
+    "raw_text": "Revenue is up 12% compared to last quarter.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.5434959276067328,
+    "evidence": {
+      "text": "Revenue is up 12% compared to last quarter.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "Yeah, the marketing campaign really helped drive new signups.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.5483893086383976,
+    "evidence": {
+      "text": "Yeah, the marketing campaign really helped drive new signups.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "raw_text": "The conversion rate from trial to paid went from 15% to 22%.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.5367391947122807,
+    "evidence": {
+      "text": "The conversion rate from trial to paid went from 15% to 22%.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "raw_text": "The board will be happy with these numbers.",
+    "assignee": "Who is responsible for performing this task?Speaker1",
+    "deadline": null,
+    "confidence": 0.7339686092798321,
+    "evidence": {
+      "text": "The board will be happy with these numbers.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "We do have some churn in the enterprise segment though.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.5727043619012737,
+    "evidence": {
+      "text": "We do have some churn in the enterprise segment though.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "raw_text": "Apparently they switched to a competitor with better integrations.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.5525813304351794,
+    "evidence": {
+      "text": "Apparently they switched to a competitor with better integrations.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "raw_text": "That's concerning.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.40439365432888885,
+    "evidence": {
+      "text": "That's concerning.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "We should look into that.",
+    "assignee": "Who is responsible for performing this task?Speaker1",
+    "deadline": null,
+    "confidence": 0.7942059951440056,
+    "evidence": {
+      "text": "We should look into that.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "The product team is already working on more integrations.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.5981730573165531,
+    "evidence": {
+      "text": "The product team is already working on more integrations.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "raw_text": "They mentioned something about a Salesforce connector.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.5488359608216045,
+    "evidence": {
+      "text": "They mentioned something about a Salesforce connector.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "raw_text": "Well, let's keep monitoring the situation.",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.501240580956529,
+    "evidence": {
+      "text": "Well, let's keep monitoring the situation.",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "Anyway, the new pricing tier seems to be working well.",
+    "assignee": "Speaker2",
+    "deadline": null,
+    "confidence": 0.5824119655087512,
+    "evidence": {
+      "text": "Anyway, the new pricing tier seems to be working well.",
+      "speaker": "Speaker2"
+    }
+  },
+  {
+    "raw_text": "Yes, the mid-tier plan is the most popular choice now.",
+    "assignee": "Speaker3",
+    "deadline": null,
+    "confidence": 0.6140640281330614,
+    "evidence": {
+      "text": "Yes, the mid-tier plan is the most popular choice now.",
+      "speaker": "Speaker3"
+    }
+  },
+  {
+    "raw_text": "Anything else to discuss?",
+    "assignee": "Speaker1",
+    "deadline": null,
+    "confidence": 0.5374845635635221,
+    "evidence": {
+      "text": "Anything else to discuss?",
+      "speaker": "Speaker1"
+    }
+  },
+  {
+    "raw_text": "Let's maybe revisit the churn issue next quarter.",
+    "assignee": "Speaker2",
+    "deadline": "next quarter",
+    "confidence": 0.41757317174842934,
+    "evidence": {
+      "text": "Let's maybe revisit the churn issue next quarter.",
+      "speaker": "Speaker2"
+    }
+  }
+]

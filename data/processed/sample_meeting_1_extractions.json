@@ -1,0 +1,62 @@
+[
+  {
+    "raw_text": "I will handle the API refactor by Friday.",
+    "assignee": "Bob",
+    "deadline": "Friday",
+    "confidence": 1.0,
+    "evidence": {
+      "text": "I will handle the API refactor by Friday.",
+      "speaker": "Bob"
+    }
+  },
+  {
+    "raw_text": "Charlie, can you write the integration tests for the new endpoints?",
+    "assignee": "Alice",
+    "deadline": null,
+    "confidence": 1.0,
+    "evidence": {
+      "text": "Charlie, can you write the integration tests for the new endpoints?",
+      "speaker": "Alice"
+    }
+  },
+  {
+    "raw_text": "Yes, I will write the tests by Wednesday.",
+    "assignee": "Charlie",
+    "deadline": "Wednesday",
+    "confidence": 1.0,
+    "evidence": {
+      "text": "Yes, I will write the tests by Wednesday.",
+      "speaker": "Charlie"
+    }
+  },
+  {
+    "raw_text": "Diana, please update the project documentation with the new API specs.",
+    "assignee": "Diana",
+    "deadline": null,
+    "confidence": 1.0,
+    "evidence": {
+      "text": "Diana, please update the project documentation with the new API specs.",
+      "speaker": "Alice"
+    }
+  },
+  {
+    "raw_text": "I'll update the docs by Thursday.",
+    "assignee": "Diana",
+    "deadline": "Thursday",
+    "confidence": 1.0,
+    "evidence": {
+      "text": "I'll update the docs by Thursday.",
+      "speaker": "Diana"
+    }
+  },
+  {
+    "raw_text": "I'll look into the CI/CD pipeline and fix the failing builds.",
+    "assignee": "Bob",
+    "deadline": null,
+    "confidence": 1.0,
+    "evidence": {
+      "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
+      "speaker": "Bob"
+    }
+  }
+]

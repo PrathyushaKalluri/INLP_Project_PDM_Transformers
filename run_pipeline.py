@@ -1,56 +1,35 @@
 #!/usr/bin/env python3
 """
-run_pipeline.py — Single Command Demo Workflow
+run_pipeline.py — NLP Action Extraction Pipeline (Refactored)
 
-Runs the entire meeting action extraction pipeline on a transcript file
-and launches the interactive task board.
+Runs the modular meeting action extraction pipeline on a transcript file.
 
 Usage:
     python run_pipeline.py <transcript_file>
-    python run_pipeline.py transcripts/demo_meeting.txt
-    python run_pipeline.py                              # paste from stdin
-
-Pipeline stages:
-    STEP 1  Preprocessing        (spaCy sentence segmentation)
-    STEP 2  Decision Detection   (Transformer NLI model)
-    STEP 3  Decision Clustering  (Sentence embeddings)
-    STEP 4  Decision Summarization (BART + cleaning)
-    STEP 5  Task Generation      (QA + NER models)
-    STEP 6  Task Board UI        (FastAPI server)
+    python run_pipeline.py transcripts/sample_meeting_1.txt
+    python run_pipeline.py                # paste from stdin
 """
 
 import os
 import sys
-import shutil
+import json
 import time
 from pathlib import Path
+from typing import List, Dict
 
-# ── Apple Silicon safety: set BEFORE any ML imports ─────────────────────
+# Apple Silicon safety
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# ── Data paths ──────────────────────────────────────────────────────────
-PROJECT_ROOT = Path(__file__).resolve().parent
-
-RAW_TRANSCRIPT = PROJECT_ROOT / "data" / "raw_transcripts" / "meeting1.txt"
-PROCESSED_TRANSCRIPT = PROJECT_ROOT / "data" / "processed_transcripts" / "meeting1.json"
-DECISIONS_FILE = PROJECT_ROOT / "data" / "decision_sentences" / "meeting1_decisions.json"
-CLUSTERS_FILE = PROJECT_ROOT / "data" / "decision_clusters" / "meeting1_clusters.json"
-SUMMARIES_FILE = PROJECT_ROOT / "data" / "decision_summaries" / "meeting1_decisions.json"
-TASKS_FILE = PROJECT_ROOT / "data" / "tasks" / "meeting1_tasks.json"
-
-
-def banner(text: str) -> None:
-    """Print a visible stage banner."""
-    width = 60
-    print()
-    print("=" * width)
-    print(f"  {text}")
-    print("=" * width)
+from pipeline.config import OUTPUT_DATA_DIR, PROCESSED_DATA_DIR
+from pipeline.preprocessing import parse_speakers, split_sentences, clean_sentences, filter_stopwords, resolve_triplets
+from pipeline.detection import HybridDetector
+from pipeline.extraction import AssigneeExtractor, DeadlineExtractor
+from pipeline.postprocessing import TaskBuilder, ConfidenceScorer, Deduplicator
 
 
 def load_transcript_from_file(path: Path) -> str:
-    """Load transcript from a file path."""
+    """Load transcript from file."""
     if not path.exists():
         print(f"✗ Transcript file not found: {path}")
         sys.exit(1)
@@ -58,180 +37,249 @@ def load_transcript_from_file(path: Path) -> str:
 
 
 def load_transcript_from_stdin() -> str:
-    """Read transcript from stdin (interactive paste)."""
-    print("Paste meeting transcript below, then press CTRL+D (Mac/Linux)")
-    print("or CTRL+Z followed by Enter (Windows):")
-    print("-" * 60)
+    """Read transcript from stdin."""
+    print("Paste meeting transcript below (CTRL+D on Mac/Linux; CTRL+Z+Enter on Windows):")
+    print("-" * 70)
     try:
         text = sys.stdin.read()
     except KeyboardInterrupt:
         print("\nAborted.")
         sys.exit(1)
-
+    
     if not text.strip():
-        print("✗ Empty transcript. Aborting.")
+        print("✗ Empty transcript.")
         sys.exit(1)
+    
     return text
 
 
-def step1_preprocess(raw_text: str) -> list:
-    """STEP 1: Preprocess raw transcript into structured sentences."""
-    from pipeline.preprocess import preprocess_transcript, save_processed_transcript
+def save_step_output(meeting_id: str, step: int, data: List[Dict], description: str) -> Path:
+    """Save output for each pipeline step to data folder."""
+    if step == 1:
+        # Preprocessing output
+        output_file = PROCESSED_DATA_DIR / f"{meeting_id}.json"
+    elif step == 2:
+        # Decision detection output
+        output_file = PROCESSED_DATA_DIR / f"{meeting_id}_decisions.json"
+    elif step == 3:
+        # Metadata extraction output
+        output_file = PROCESSED_DATA_DIR / f"{meeting_id}_extractions.json"
+    elif step == 4:
+        # Final tasks output
+        output_file = OUTPUT_DATA_DIR / f"{meeting_id}_tasks.json"
+    else:
+        return None
+    
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Remove non-serializable fields (spacy_doc, etc.) before saving
+    def make_serializable(item):
+        """Remove spacy_doc and other non-JSON-serializable fields."""
+        if not isinstance(item, dict):
+            return item
+        clean_item = {}
+        for key, value in item.items():
+            # Skip non-serializable types
+            if key in ("spacy_doc",):
+                continue
+            # Only keep JSON-serializable types
+            if isinstance(value, (str, int, float, bool, type(None))):
+                clean_item[key] = value
+            elif isinstance(value, dict):
+                clean_item[key] = make_serializable(value)
+            elif isinstance(value, list):
+                clean_item[key] = [
+                    make_serializable(v) if isinstance(v, dict) else v
+                    for v in value
+                ]
+        return clean_item
+    
+    clean_data = [make_serializable(item) if isinstance(item, dict) else item for item in data]
+    
+    with open(output_file, 'w') as f:
+        json.dump(clean_data, f, indent=2)
+    
+    print(f"    [*] {description}: {output_file}")
+    return output_file
 
-    sentences = preprocess_transcript(raw_text)
-    save_processed_transcript(sentences, str(PROCESSED_TRANSCRIPT))
-    return sentences
-
-
-def step2_detect_decisions() -> list:
-    """STEP 2: Detect decision-related sentences using NLI classifier."""
-    from pipeline.decision_detector import detect_decisions_in_transcript
-
-    decisions = detect_decisions_in_transcript(
-        input_path=str(PROCESSED_TRANSCRIPT),
-        output_path=str(DECISIONS_FILE),
-        threshold=0.7,
-    )
-    return decisions
-
-
-def step3_cluster() -> list:
-    """STEP 3: Cluster related decision sentences."""
-    from pipeline.clustering import cluster_decisions_in_transcript
-
-    clusters = cluster_decisions_in_transcript(
-        input_path=str(DECISIONS_FILE),
-        output_path=str(CLUSTERS_FILE),
-    )
-    return clusters
-
-
-def step4_summarize() -> list:
-    """STEP 4: Generate concise decision summaries."""
-    from pipeline.summarization import summarize_decisions_in_transcript
-
-    summaries = summarize_decisions_in_transcript(
-        input_path=str(CLUSTERS_FILE),
-        output_path=str(SUMMARIES_FILE),
-    )
-    return summaries
-
-
-def step5_generate_tasks() -> list:
-    """STEP 5: Extract structured tasks from summaries."""
-    from pipeline.task_generator import generate_tasks_from_transcript
-
-    tasks = generate_tasks_from_transcript(
-        summaries_path=str(SUMMARIES_FILE),
-        transcript_path=str(PROCESSED_TRANSCRIPT),
-        output_path=str(TASKS_FILE),
-    )
-    return tasks
-
-
-def step6_launch_ui() -> None:
-    """STEP 6: Launch the FastAPI task board."""
-    import uvicorn
-
-    print("\nStarting task board at  http://127.0.0.1:8000")
-    print("Press CTRL+C to stop.\n")
-
-    uvicorn.run(
-        "app.main:app",
-        host="127.0.0.1",
-        port=8000,
-        reload=False,
-        log_level="info",
-    )
-
-
-# ── Main ────────────────────────────────────────────────────────────────
 
 def main():
+    """Main entry point - processes transcript through all pipeline steps and saves each step's output."""
     start = time.time()
-
-    banner("MEETING ACTION EXTRACTION DEMO")
-
-    # ── Resolve transcript source ───────────────────────────────────────
+    
+    # ── Load transcript ─────────────────────────────────────────────────
     if len(sys.argv) >= 2:
         transcript_path = Path(sys.argv[1])
         raw_text = load_transcript_from_file(transcript_path)
-        print(f"\n✓ Transcript loaded: {transcript_path}")
+        meeting_id = transcript_path.stem  # Extract filename without extension
+        print(f"\n[*] Loaded: {transcript_path}")
     else:
         raw_text = load_transcript_from_stdin()
-        print("\n✓ Transcript loaded from stdin")
-
-    # Copy into the raw data folder so all paths stay consistent
-    RAW_TRANSCRIPT.parent.mkdir(parents=True, exist_ok=True)
-    RAW_TRANSCRIPT.write_text(raw_text, encoding="utf-8")
-
+        meeting_id = "meeting"
+        print(f"\n[*] Loaded from stdin")
+    
     line_count = len([l for l in raw_text.strip().splitlines() if l.strip()])
-    print(f"  Lines: {line_count}")
-
-    # ── STEP 1 ──────────────────────────────────────────────────────────
-    banner("STEP 1 / 6 — Preprocessing")
-    sentences = step1_preprocess(raw_text)
-    print(f"✓ {len(sentences)} sentences extracted")
-    print(f"  JSON → {PROCESSED_TRANSCRIPT.relative_to(PROJECT_ROOT)}")
-
-    # ── STEP 2 ──────────────────────────────────────────────────────────
-    banner("STEP 2 / 6 — Decision Detection")
-    decisions = step2_detect_decisions()
-    print(f"\n✓ {len(decisions)} decisions detected")
-    print(f"  JSON → {DECISIONS_FILE.relative_to(PROJECT_ROOT)}")
-
-    # ── STEP 3 ──────────────────────────────────────────────────────────
-    banner("STEP 3 / 6 — Decision Clustering")
-    clusters = step3_cluster()
-    print(f"\n✓ {len(clusters)} clusters formed")
-    print(f"  JSON → {CLUSTERS_FILE.relative_to(PROJECT_ROOT)}")
-
-    # ── STEP 4 ──────────────────────────────────────────────────────────
-    banner("STEP 4 / 6 — Decision Summarization")
-    summaries = step4_summarize()
-    print(f"\n✓ {len(summaries)} summaries generated")
-    print(f"  JSON → {SUMMARIES_FILE.relative_to(PROJECT_ROOT)}")
-
-    # ── STEP 5 ──────────────────────────────────────────────────────────
-    banner("STEP 5 / 6 — Task Generation")
-    tasks = step5_generate_tasks()
-    print(f"\n✓ {len(tasks)} tasks generated")
-    print(f"  JSON → {TASKS_FILE.relative_to(PROJECT_ROOT)}")
-
-    # ── Results ─────────────────────────────────────────────────────────
+    char_count = len(raw_text)
+    print(f"    Lines: {line_count} | Characters: {char_count}")
+    
+    print("\n" + "="*60)
+    print("  NLP ACTION EXTRACTION PIPELINE")
+    print("="*60)
+    
+    # ── STEP 1: PREPROCESSING ────────────────────────────────────────
+    print("\n[1/4] PREPROCESSING")
+    print("-" * 60)
+    
+    speaker_utterances = parse_speakers(raw_text)
+    print(f"    * Parsed {len(speaker_utterances)} speaker utterances")
+    
+    sentences = split_sentences(speaker_utterances)
+    print(f"    * Split into {len(sentences)} sentences")
+    
+    sentences = clean_sentences(sentences)
+    print(f"    * Cleaned sentences (removed empty)")
+    
+    sentences = filter_stopwords(sentences)
+    total_filtered = len(speaker_utterances) + len(split_sentences(speaker_utterances)) - len(sentences)
+    print(f"    * Filtered {total_filtered} stopword sentences")
+    
+    sentences = resolve_triplets(sentences)
+    print(f"    * Resolved triplets and scored confidence")
+    
+    # Save Step 1: Preprocessed sentences
+    save_step_output(meeting_id, 1, sentences, "Preprocessing output saved to")
+    
+    # ── STEP 2: DECISION DETECTION ────────────────────────────────────
+    print("\n[2/4] DECISION DETECTION")
+    print("-" * 60)
+    print("[*] Loading zero-shot classification model...")
+    
+    # Initialize detector with enhanced features
+    # Features: dependency tree modals, context window, semantic features
+    detector = HybridDetector(
+        use_transformer=True,
+        use_features=True,  # Enable modal verbs and direct object detection
+        use_context=True,   # Enable context window (prior 2 sentences)
+        context_window=2
+    )
+    detected = detector.detect_batch(sentences)
+    decision_sentences = [s for s in detected if s.get("is_decision")]
+    print(f"    * Detected {len(decision_sentences)} decision sentences")
+    
+    if decision_sentences:
+        avg_conf = sum(s.get('confidence', 0) for s in decision_sentences) / len(decision_sentences)
+        print(f"    * Confidence scores: avg={avg_conf:.2f}")
+        
+        # Show modal boost statistics
+        with_modal = sum(1 for s in decision_sentences if s.get("modal_boost", 0) > 0)
+        if with_modal > 0:
+            avg_boost = sum(s.get("modal_boost", 0) for s in decision_sentences) / len(decision_sentences)
+            print(f"    * Modal verbs detected: {with_modal}/{len(decision_sentences)} (avg boost: {avg_boost:.2f})")
+    
+    # Save Step 2: Detected decisions
+    save_step_output(meeting_id, 2, detected, "Decision detection output saved to")
+    
+    if not decision_sentences:
+        print(f"    [!] No decisions detected in {meeting_id}")
+        return 1
+    
+    if not decision_sentences:
+        print(f"    [!] No decisions detected in {meeting_id}")
+        return 1
+    
+    # ── STEP 3: METADATA EXTRACTION ──────────────────────────────────
+    print("\n[3/4] METADATA EXTRACTION")
+    print("-" * 60)
+    print("[*] Loading QA model: deepset/roberta-base-squad2")
+    
+    assignee_extractor = AssigneeExtractor()
+    deadline_extractor = DeadlineExtractor()
+    print("[+] QA model loaded")
+    print("[+] spaCy NER model loaded")
+    
+    task_definitions = []
+    for sent in decision_sentences:
+        text = sent.get("text", "")
+        
+        # Extract assignee
+        assignee = assignee_extractor.extract([sent])
+        
+        # Extract deadline
+        deadline = deadline_extractor.extract(text)
+        
+        # Store extraction (description will be generated during task building)
+        task_definitions.append({
+            "raw_text": text,  # Raw text for description generation in postprocessing
+            "assignee": assignee,
+            "deadline": deadline,
+            "confidence": sent.get("confidence", 0.8),
+            "evidence": {
+                    "text": text,
+                    "speaker": sent.get("speaker", "Unknown"),
+                }
+            })
+    
+    print(f"    * Generated {len(task_definitions)} task definitions")
+    print(f"    * With assignees: {sum(1 for t in task_definitions if t.get('assignee'))}")
+    print(f"    * With deadlines: {sum(1 for t in task_definitions if t.get('deadline'))}")
+    
+    # Save Step 3: Extracted metadata
+    save_step_output(meeting_id, 3, task_definitions, "Extraction output saved to")
+    
+    # ── STEP 4: POSTPROCESSING ───────────────────────────────────────
+    print("\n[4/4] POSTPROCESSING")
+    print("-" * 60)
+    
+    # Build tasks
+    tasks = TaskBuilder.build_batch(task_definitions)
+    print(f"    * Built {len(tasks)} task objects")
+    
+    # Score confidence
+    tasks = ConfidenceScorer.score_batch(tasks)
+    
+    # Deduplicate
+    tasks = Deduplicator.deduplicate(tasks)
+    print(f"    * After deduplication: {len(tasks)} unique tasks")
+    
+    # Save Step 4: Final tasks
+    save_step_output(meeting_id, 4, tasks, "Tasks output saved to")
+    
     elapsed = time.time() - start
-    banner("PIPELINE COMPLETE")
-    print(f"\n  Sentences:  {len(sentences)}")
-    print(f"  Decisions:  {len(decisions)}")
-    print(f"  Clusters:   {len(clusters)}")
-    print(f"  Summaries:  {len(summaries)}")
-    print(f"  Tasks:      {len(tasks)}")
-    print(f"  Time:       {elapsed:.1f}s")
-
-    print("\n  JSON outputs:")
-    print("  " + "-" * 56)
-    json_outputs = [
-        ("STEP 1", PROCESSED_TRANSCRIPT),
-        ("STEP 2", DECISIONS_FILE),
-        ("STEP 3", CLUSTERS_FILE),
-        ("STEP 4", SUMMARIES_FILE),
-        ("STEP 5", TASKS_FILE),
-    ]
-    for label, path in json_outputs:
-        print(f"    {label}: {path.relative_to(PROJECT_ROOT)}")
-
-    print("\n  Extracted tasks:")
-    print("  " + "-" * 56)
-    for task in tasks:
-        deadline_str = f"  (deadline: {task['deadline']})" if task.get("deadline") else ""
-        print(f"    • {task['title']}")
-        print(f"      Assignee: {task['assignee']}{deadline_str}")
-    print()
-
-    # ── STEP 6 ──────────────────────────────────────────────────────────
-    banner("STEP 6 / 6 — Task Board UI")
-    step6_launch_ui()
+    
+    # ── SUMMARY ──────────────────────────────────────────────────────
+    print("\n" + "="*60)
+    print(f"  SUMMARY: Extracted {len(tasks)} action items")
+    print("="*60)
+    print(f"[*] Completed in: {elapsed:.1f}s")
+    
+    # ── Display results ──────────────────────────────────────────────
+    if tasks:
+        print(f"\n{'='*70}")
+        print(f"  EXTRACTED {len(tasks)} TASK(S)")
+        print(f"{'='*70}")
+        
+        for i, task in enumerate(tasks, 1):
+            print(f"\n{i}. {task['task']}")
+            
+            if task.get('assignee'):
+                print(f"   Assignee: {task['assignee']}")
+            
+            if task.get('deadline'):
+                print(f"   Deadline: {task['deadline']}")
+            
+            if task.get('confidence'):
+                conf_pct = f"{task['confidence']*100:.0f}%"
+                print(f"   Confidence: {conf_pct}")
+            
+            if task.get('evidence'):
+                evidence = task['evidence']
+                if evidence.get('speaker'):
+                    print(f"   Speaker: {evidence['speaker']}")
+    else:
+        print(f"\n[!] No tasks extracted from transcript.")
+    
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -1,0 +1,141 @@
+[
+  {
+    "sentence_id": 1,
+    "speaker": "Alice",
+    "text": "Good morning everyone.",
+    "root_verb": null,
+    "object": null,
+    "subject": "Alice",
+    "turn_id": 1,
+    "triplet_confidence": 0.9,
+    "triplet_flags": [
+      "null_object"
+    ]
+  },
+  {
+    "sentence_id": 2,
+    "speaker": "Alice",
+    "text": "Let's start with the sprint planning for this week.",
+    "root_verb": "start",
+    "object": "the sprint planning",
+    "subject": "team",
+    "turn_id": 1,
+    "subject_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  },
+  {
+    "sentence_id": 4,
+    "speaker": "Bob",
+    "text": "I will handle the API refactor by Friday.",
+    "root_verb": "handle",
+    "object": "the API refactor",
+    "subject": "I",
+    "turn_id": 2,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 5,
+    "speaker": "Bob",
+    "text": "The current endpoints are too slow.",
+    "root_verb": "be",
+    "object": "the API refactor",
+    "subject": "current endpoints",
+    "turn_id": 2,
+    "object_resolved": true,
+    "triplet_confidence": 0.65,
+    "triplet_flags": [
+      "resolved_via_context",
+      "weak_root_verb"
+    ]
+  },
+  {
+    "sentence_id": 7,
+    "speaker": "Alice",
+    "text": "Charlie, can you write the integration tests for the new endpoints?",
+    "root_verb": "write",
+    "object": "the integration tests",
+    "subject": "Bob",
+    "turn_id": 3,
+    "subject_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  },
+  {
+    "sentence_id": 8,
+    "speaker": "Charlie",
+    "text": "Yes, I will write the tests by Wednesday.",
+    "root_verb": "write",
+    "object": "the tests",
+    "subject": "I",
+    "turn_id": 4,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 9,
+    "speaker": "Alice",
+    "text": "Diana, please update the project documentation with the new API specs.",
+    "root_verb": "update",
+    "object": "the project documentation",
+    "subject": "Diana",
+    "turn_id": 5,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 10,
+    "speaker": "Diana",
+    "text": "I'll update the docs by Thursday.",
+    "root_verb": "update",
+    "object": "the docs",
+    "subject": "I",
+    "turn_id": 6,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 12,
+    "speaker": "Alice",
+    "text": "Let's also follow up on the deployment pipeline issue from last week.",
+    "root_verb": "follow",
+    "object": "the pipeline issue",
+    "subject": "team",
+    "turn_id": 7,
+    "subject_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  },
+  {
+    "sentence_id": 13,
+    "speaker": "Bob",
+    "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
+    "root_verb": "look",
+    "object": "the failing builds",
+    "subject": "I",
+    "turn_id": 8,
+    "triplet_confidence": 1.0,
+    "triplet_flags": []
+  },
+  {
+    "sentence_id": 15,
+    "speaker": "Alice",
+    "text": "Let's meet again on Friday to review progress.",
+    "root_verb": "meet",
+    "object": "progress",
+    "subject": "team",
+    "turn_id": 9,
+    "subject_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
+  }
+]
