@@ -37,7 +37,9 @@ async def get_workspace(
     current_user: User = Depends(get_current_user),
 ):
     svc = WorkspaceService()
-    return await svc.get_or_404(workspace_id)
+    workspace = await svc.get_or_404(workspace_id)
+    svc.require_member(workspace, current_user.id)
+    return workspace
 
 
 # ── Teams ──────────────────────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ async def list_teams_with_owners(
 ):
     """List all teams in a workspace, each with their owner's full profile embedded."""
     svc = TeamService()
-    return await svc.list_for_workspace_with_owners(workspace_id)
+    return await svc.list_for_workspace_with_owners(workspace_id, current_user.id)
 
 
 @router.get("/workspaces/{workspace_id}/teams", response_model=list[TeamResponse])
@@ -68,7 +70,7 @@ async def list_teams(
     current_user: User = Depends(get_current_user),
 ):
     svc = TeamService()
-    return await svc.list_for_workspace(workspace_id)
+    return await svc.list_for_workspace(workspace_id, current_user.id)
 
 
 @router.get("/teams", response_model=list[TeamResponse])
@@ -105,7 +107,7 @@ async def list_team_members(
 ):
     """List all members of a team with their user profile and role."""
     svc = TeamService()
-    return await svc.list_members_detail(team_id)
+    return await svc.list_members_detail(team_id, current_user.id)
 
 
 @router.post("/teams/{team_id}/members", status_code=204)

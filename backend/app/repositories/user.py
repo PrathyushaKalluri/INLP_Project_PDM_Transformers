@@ -31,6 +31,20 @@ class UserRepository:
         await user.save()
         return user
 
+    @staticmethod
+    async def find_by_name(name: str) -> User | None:
+        """Case-insensitive exact match on full_name."""
+        import re
+        pattern = re.compile(f"^{re.escape(name)}$", re.IGNORECASE)
+        return await User.find_one({"full_name": {"$regex": pattern}})
+
+    @staticmethod
+    async def find_by_email_prefix(prefix: str) -> User | None:
+        """Case-insensitive prefix match on email (before the @ symbol)."""
+        import re
+        pattern = re.compile(f"^{re.escape(prefix)}", re.IGNORECASE)
+        return await User.find_one({"email": {"$regex": pattern}})
+
 
 class WorkspaceRepository:
     @staticmethod

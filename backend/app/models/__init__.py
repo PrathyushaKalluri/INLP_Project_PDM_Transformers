@@ -12,11 +12,24 @@ from app.models.task import (
     TaskPriority,
     SuggestionReviewStatus,
 )
+from app.models.processing import Job, JobStatus
+from app.models.notification import Notification, NotificationType
 
 
 def get_document_models() -> list:
     """Return all Beanie Document classes for init_beanie()."""
-    return [User, Workspace, Team, Project, Meeting, Transcript, TaskSuggestion, Task]
+    return [
+        User,
+        Workspace,
+        Team,
+        Project,
+        Meeting,
+        Transcript,
+        TaskSuggestion,
+        Task,
+        Job,
+        Notification,
+    ]
 
 
 __all__ = [
@@ -41,5 +54,9 @@ __all__ = [
     "TaskStatus",
     "TaskPriority",
     "SuggestionReviewStatus",
+    "Job",
+    "JobStatus",
+    "Notification",
+    "NotificationType",
     "get_document_models",
 ]

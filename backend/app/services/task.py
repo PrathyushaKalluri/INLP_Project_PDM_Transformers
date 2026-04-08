@@ -12,13 +12,17 @@ from app.schemas.task import (
     SubTaskCreate, SubTaskUpdate, TaskCreate, TaskNoteCreate, TaskUpdate,
 )
 from app.services.errors import bad_request, conflict, forbidden, not_found
+from app.services.notification import NotificationService
 from app.services.project import ProjectService
 from app.models.task import TaskPriority
+from app.models.notification import NotificationType
+from app.core.realtime import realtime_hub
 
 
 class TaskService:
     def __init__(self) -> None:
         self.project_svc = ProjectService()
+        self.notification_svc = NotificationService()
 
     # ── Task CRUD ──────────────────────────────────────────────────────────────
 
@@ -41,6 +45,12 @@ class TaskService:
             status_history=[TaskStatusHistory(old_status=None, new_status=data.status.value, changed_by=creator_id)],
         )
         await task.insert()
+        await self.notification_svc.create_for_project(
+            str(project.id),
+            f"Task created: {task.title}",
+            NotificationType.SUCCESS,
+        )
+        await self._emit_project_task_event(str(project.id), "task_created", task)
         return task
 
     async def get_or_404(self, task_id: str) -> Task:
@@ -64,12 +74,24 @@ class TaskService:
 
         if data.status and data.status != old_status:
             await self._record_status_change(task, old_status.value, data.status.value, requester_id)
+        await self.notification_svc.create_for_project(
+            str(task.project_id),
+            f"Task updated: {task.title}",
+            NotificationType.INFO,
+        )
+        await self._emit_project_task_event(str(task.project_id), "task_updated", task)
         return task
 
     async def delete(self, task_id: str, requester_id: PydanticObjectId) -> None:
         task = await self.get_or_404(task_id)
         await self.project_svc._require_project_member(task.project_id, requester_id)
         self._require_task_owner(task, requester_id)
+        await self.notification_svc.create_for_project(
+            str(task.project_id),
+            f"Task deleted: {task.title}",
+            NotificationType.WARNING,
+        )
+        await self._emit_project_task_event(str(task.project_id), "task_deleted", {"taskId": str(task.id)})
         await task.delete()
 
     async def list_filtered(self, requester_id: PydanticObjectId, **filters) -> tuple[list[Task], int]:
@@ -149,7 +171,7 @@ class TaskService:
             status=data.status,
             priority=data.priority,
             assignee_id=PydanticObjectId(data.assignee_id) if data.assignee_id else None,
-            owner_id=PydanticObjectId(data.owner_id) if data.owner_id else None,
+            owner_id=PydanticObjectId(data.owner_id) if data.owner_id else requester_id,
             due_date=data.due_date or suggestion.suggested_deadline,
             created_by=requester_id,
             is_manual=False,
@@ -164,6 +186,12 @@ class TaskService:
             reviewed_by=requester_id,
             task_id=task.id,
         )
+        await self.notification_svc.create_for_project(
+            str(meeting.project_id),
+            f"Suggestion approved and task created: {task.title}",
+            NotificationType.SUCCESS,
+        )
+        await self._emit_project_task_event(str(meeting.project_id), "task_created", task)
         return task
 
     async def reject_suggestion(self, suggestion_id: str, requester_id: PydanticObjectId) -> TaskSuggestion:
@@ -276,6 +304,25 @@ class TaskService:
 
     def _require_task_owner(self, task: Task, requester_id: PydanticObjectId) -> None:
         if task.owner_id is None:
-            raise forbidden("Task has no owner. Set task owner before editing.")
+            # Allow any project member to edit/delete tasks with no owner.
+            # Project membership is already verified by the caller.
+            return
         if task.owner_id != requester_id:
             raise forbidden("Only task owner can edit or delete this task.")
+
+    async def _emit_project_task_event(self, project_id: str, event_type: str, task_or_payload) -> None:
+        project = await self.project_svc.get_or_404(project_id)
+        user_ids: set[str] = {str(project.owner_id), str(project.created_by)}
+        user_ids.update(str(member.user_id) for member in project.members)
+
+        if isinstance(task_or_payload, dict):
+            payload = task_or_payload
+        else:
+            payload = {
+                "id": str(task_or_payload.id),
+                "projectId": str(task_or_payload.project_id),
+                "title": task_or_payload.title,
+                "status": task_or_payload.status.value,
+                "priority": task_or_payload.priority.value,
+            }
+        await realtime_hub.emit_to_users(list(user_ids), event_type, payload)

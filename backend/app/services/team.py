@@ -28,6 +28,10 @@ class WorkspaceService:
             raise not_found("Workspace")
         return ws
 
+    def require_member(self, workspace: Workspace, user_id: PydanticObjectId) -> None:
+        if not any(member.user_id == user_id for member in workspace.members):
+            raise forbidden("You are not a member of this workspace.")
+
 
 class TeamService:
     async def create(self, workspace_id: str, data: TeamCreate, creator_id: PydanticObjectId) -> Team:
@@ -50,7 +54,9 @@ class TeamService:
     async def get_or_404(self, team_id: str) -> Team:
         return await self._get_or_404(team_id)
 
-    async def list_for_workspace(self, workspace_id: str) -> list[Team]:
+    async def list_for_workspace(self, workspace_id: str, requester_id: PydanticObjectId) -> list[Team]:
+        ws = await WorkspaceService().get_or_404(workspace_id)
+        WorkspaceService().require_member(ws, requester_id)
         return await TeamRepository.list_for_workspace(PydanticObjectId(workspace_id))
 
     async def list_for_user(self, user_id: PydanticObjectId) -> list[Team]:
@@ -81,10 +87,14 @@ class TeamService:
         await TeamRepository.remove_member(team, target_oid)
 
     async def list_for_workspace_with_owners(
-        self, workspace_id: str
+        self,
+        workspace_id: str,
+        requester_id: PydanticObjectId,
     ) -> list[dict]:
         from app.schemas.team import TeamOwnerInfo, TeamWithOwnerResponse
 
+        ws = await WorkspaceService().get_or_404(workspace_id)
+        WorkspaceService().require_member(ws, requester_id)
         teams = await TeamRepository.list_for_workspace(PydanticObjectId(workspace_id))
         result = []
         for team in teams:
@@ -113,10 +123,12 @@ class TeamService:
             )
         return result
 
-    async def list_members_detail(self, team_id: str) -> list[dict]:
+    async def list_members_detail(self, team_id: str, requester_id: PydanticObjectId) -> list[dict]:
         from app.schemas.team import TeamMemberDetailResponse
 
         team = await self._get_or_404(team_id)
+        if not TeamRepository.get_member(team, requester_id):
+            raise forbidden("You are not a member of this team.")
         result = []
         for member in team.members:
             user = await UserRepository.get_by_id(str(member.user_id))
