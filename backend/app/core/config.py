@@ -22,7 +22,12 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 10
 
     # NLP
+    NLP_MODE: str = "local"
     NLP_PIPELINE_PATH: str = "../meeting-action-extractor/src"
+    NLP_SERVICE_BASE_URL: str = "http://localhost:8001"
+    NLP_SERVICE_TIMEOUT_SECONDS: int = 30
+    NLP_SERVICE_POLL_INTERVAL_SECONDS: int = 2
+    NLP_SERVICE_MAX_POLL_SECONDS: int = 300
 
     @property
     def max_upload_bytes(self) -> int:

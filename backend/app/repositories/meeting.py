@@ -28,6 +28,12 @@ class MeetingRepository:
         )
 
     @staticmethod
+    async def count_for_project(
+        project_id: PydanticObjectId,
+    ) -> int:
+        return await Meeting.find(Meeting.project_id == project_id).count()
+
+    @staticmethod
     async def list_for_team(
         team_id: PydanticObjectId,
         skip: int = 0,
@@ -40,6 +46,12 @@ class MeetingRepository:
             .limit(limit)
             .to_list()
         )
+
+    @staticmethod
+    async def count_for_team(
+        team_id: PydanticObjectId,
+    ) -> int:
+        return await Meeting.find(Meeting.team_id == team_id).count()
 
     @staticmethod
     async def create(**kwargs) -> Meeting:

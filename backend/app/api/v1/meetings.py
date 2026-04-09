@@ -25,21 +25,34 @@ async def create_meeting(
     return await svc.create(data, current_user.id)
 
 
-@router.get("", response_model=list[MeetingResponse])
+@router.get("", response_model=dict | list[MeetingResponse])
 async def list_meetings(
     project_id: str | None = Query(None),
     team_id: str | None = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    paginated: bool = Query(False),
     current_user: User = Depends(get_current_user),
 ):
     svc = MeetingService()
     skip = (page - 1) * limit
+    meetings = []
+    count = 0
     if project_id:
-        return await svc.list_for_project(project_id, current_user.id, skip, limit)
+        meetings, count = await svc.list_for_project(project_id, current_user.id, skip, limit)
     elif team_id:
-        return await svc.list_for_team(team_id, current_user.id, skip, limit)
-    raise bad_request("Provide either project_id or team_id query parameter.")
+        meetings, count = await svc.list_for_team(team_id, current_user.id, skip, limit)
+    else:
+        raise bad_request("Provide either project_id or team_id query parameter.")
+
+    if paginated:
+        return {
+            "total": count,
+            "page": page,
+            "limit": limit,
+            "items": [MeetingResponse.model_validate(m) for m in meetings],
+        }
+    return meetings
 
 
 @router.get("/{meeting_id}", response_model=MeetingResponse)
@@ -61,6 +74,15 @@ async def update_meeting(
 ):
     svc = MeetingService()
     return await svc.update(meeting_id, data, current_user.id)
+
+
+@router.delete("/{meeting_id}", status_code=204)
+async def delete_meeting(
+    meeting_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    svc = MeetingService()
+    await svc.delete(meeting_id, current_user.id)
 
 
 @router.post("/{meeting_id}/transcript", response_model=TranscriptStatusResponse, status_code=202)
@@ -101,6 +123,16 @@ async def get_transcript_status(
     meeting = await svc.get_or_404(meeting_id)
     await svc.project_svc._require_project_member(meeting.project_id, current_user.id)
     return await svc.get_transcript_status(meeting_id)
+
+
+@router.delete("/{meeting_id}/transcript", status_code=204)
+async def delete_transcript(
+    meeting_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    svc = MeetingService()
+    transcript = await svc.get_transcript_status(meeting_id)
+    await svc.delete_transcript(str(transcript.id), current_user.id)
 
 
 @router.get("/{meeting_id}/summary", response_model=MeetingSummaryResponse)

@@ -36,6 +36,11 @@ class ProjectService:
         self._require_project_owner(project, requester_id)
         return await ProjectRepository.update(project, **data.model_dump(exclude_none=True))
 
+    async def delete(self, project_id: str, requester_id: PydanticObjectId) -> None:
+        project = await self.get_or_404(project_id)
+        self._require_project_owner(project, requester_id)
+        await project.delete()
+
     async def list_for_user(
         self,
         requester_id: PydanticObjectId,

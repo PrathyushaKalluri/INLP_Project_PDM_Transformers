@@ -65,6 +65,15 @@ async def update_project(
     return await svc.update(project_id, data, current_user.id)
 
 
+@router.delete("/{project_id}", status_code=204)
+async def delete_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    svc = ProjectService()
+    await svc.delete(project_id, current_user.id)
+
+
 @router.get("/{project_id}/members", response_model=list[ProjectMemberResponse])
 async def list_project_members(
     project_id: str,

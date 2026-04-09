@@ -12,6 +12,11 @@ from app.models.task import (
 )
 
 
+def _date_to_datetime(d: date) -> datetime:
+    """Convert a date to a timezone-aware datetime for MongoDB comparison."""
+    return datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+
+
 class TaskRepository:
     @staticmethod
     async def get_by_id(id: str) -> Task | None:
@@ -56,9 +61,9 @@ class TaskRepository:
         if priority:
             filters["priority"] = priority
         if due_before:
-            filters["due_date"] = {"$lte": due_before.isoformat()}
+            filters["due_date"] = {"$lte": _date_to_datetime(due_before)}
         if due_after:
-            filters.setdefault("due_date", {})["$gte"] = due_after.isoformat()
+            filters.setdefault("due_date", {})["$gte"] = _date_to_datetime(due_after)
         if is_manual is not None:
             filters["is_manual"] = is_manual
 
@@ -88,6 +93,10 @@ class TaskRepository:
         for key in ("status", "priority", "is_manual"):
             if kwargs.get(key) is not None:
                 filters[key] = kwargs[key]
+        if kwargs.get("due_before"):
+            filters["due_date"] = {"$lte": _date_to_datetime(kwargs["due_before"])}
+        if kwargs.get("due_after"):
+            filters.setdefault("due_date", {})["$gte"] = _date_to_datetime(kwargs["due_after"])
         return await Task.find(filters).count()
 
     @staticmethod
