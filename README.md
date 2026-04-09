@@ -2,102 +2,398 @@
 
 Automatic extraction of action items from meeting transcripts using transformers and NLP.
 
+## ⚡ Quick Start
+
+```bash
+# Extract tasks from a meeting transcript
+python run_pipeline.py transcripts/sample_meeting_1.txt
+
+# Or paste from stdin
+python run_pipeline.py
+# Paste transcript, then press CTRL+D
+```
+
 ## Pipeline Overview
 
+The 4-step pipeline automatically extracts actionable tasks from meeting transcripts:
+
 ```
-Upload Transcript
+Raw Transcript
     ↓
-[STEP 1] Preprocessing → Parse & Segment Sentences
+[STEP 1] Preprocessing       → Parse, split, resolve triplets
     ↓
-[STEP 2] Decision Detection → Identify Decision-Related Sentences
+[STEP 2] Decision Detection  → Identify decision-related sentences
     ↓
-[STEP 3] Clustering → Group Similar Decisions
+[STEP 3] Metadata Extraction → Extract assignee, deadline
     ↓
-[STEP 4] Summarization → Generate Summaries
+[STEP 4] Postprocessing      → Build tasks, score, deduplicate
     ↓
-[STEP 5] Task Generation → Convert to Tasks
-    ↓
-[STEP 6] Display → Show on Board
-    ↓
-Click Task → Show Evidence Sentence
+Final Tasks (JSON)
 ```
 
-## Completed Steps
+## Architecture
 
-### STEP 1: Preprocessing
-Converts raw transcripts into structured sentence-level data.
+### 1️⃣ Preprocessing
+Converts raw transcripts into structured, sentence-level data with triplet extraction.
 
-**Input:** Raw transcript text
-```
-A: we should deploy the payment API tomorrow
-B: yeah let's finalize the pricing model
-```
+**Input:** Raw transcript (speaker: utterance format)
+**Output:** Segmented sentences with S-V-O triplets and confidence scores
 
-**Output:** Structured JSON with sentence segmentation
-```json
-[
-  {"sentence_id": 1, "speaker": "A", "text": "we should deploy the payment API tomorrow"},
-  {"sentence_id": 2, "speaker": "B", "text": "yeah let's finalize the pricing model"}
-]
-```
+**Components:**
+- Speaker parsing
+- Sentence segmentation (spaCy)
+- Text cleaning
+- Stopword filtering
+- Triplet extraction (resolve pronouns, anaphora, etc.)
 
-**Implementation:** [PREPROCESSING_STEP1.md](PREPROCESSING_STEP1.md)
+**File:** `pipeline/preprocessing/`
 
-###  STEP 2: Decision Detection
-Identifies decision-related dialogue acts using transformer classification.
+### 2️⃣ Decision Detection
+Identifies sentences containing actionable decisions using hybrid rule-based + transformer classification.
 
-**Input:** Preprocessed sentences  
-**Output:** Filtered decisions with confidence scores
+**Input:** Preprocessed sentences
+**Output:** Decision sentences with confidence scores
+
+**Components:**
+- Rule-based keyword detection
+- Transformer-based zero-shot NLI classification
+- Hybrid scoring (combines both approaches)
+
+**Model:** `cross-encoder/nli-distilroberta-base` (250 MB)  
+**Threshold:** 0.85
+
+**File:** `pipeline/detection/`
+
+### 3️⃣ Metadata Extraction
+Extracts actionable metadata (assignee, deadline) from decisions using QA + NER.
+
+**Input:** Decision sentences
+**Output:** Task definitions with metadata
+
+**Components:**
+- Assignee extraction (QA model + NER)
+- Deadline extraction (temporal expression parsing)
+
+**Model:** `deepset/roberta-base-squad2` (400 MB)  
+**File:** `pipeline/extraction/`
+
+### 4️⃣ Postprocessing
+Builds final task objects, generates descriptions, scores confidence, and deduplicates.
+
+**Input:** Task definitions
+**Output:** Final structured tasks
+
+**Components:**
+- Task building & description generation (`google/flan-t5-base` - 990 MB)
+- Confidence scoring (weighted fusion of extraction scores)
+- Semantic deduplication (embeddings-based cosine similarity)
+
+**Model:** `all-mpnet-base-v2` (420 MB) for deduplication  
+**File:** `pipeline/postprocessing/`
+
+## Output Format
+
+#### Final Tasks JSON
 
 ```json
 [
   {
-    "sentence_id": 1,
-    "speaker": "A",
-    "text": "we should deploy the payment API tomorrow",
-    "decision_probability": 0.92
+    "task_id": "task_0",
+    "task": "Update the project documentation with the new API specifications.",
+    "assignee": "Diana",
+    "deadline": null,
+    "confidence": 0.87,
+    "evidence": {
+      "text": "Diana, please update the project documentation with the new API specs.",
+      "speaker": "Alice"
+    },
+    "flags": []
   }
 ]
 ```
 
-**Implementation:** [DECISION_DETECTION_STEP2.md](documentation/DECISION_DETECTION_STEP2.md)
+#### Intermediate Outputs
 
-**Model:** BART-large-mnli (zero-shot classification)
+| Step | Output File | Description |
+|------|-------------|-------------|
+| 1 | `data/processed/{meeting_id}.json` | Preprocessed sentences |
+| 2 | `data/processed/{meeting_id}_decisions.json` | Detected decisions |
+| 3 | `data/processed/{meeting_id}_extractions.json` | Extracted metadata |
+| 4 | `data/outputs/{meeting_id}_tasks.json` | Final tasks |
 
-###  STEP 3: Decision Clustering
-Groups decision sentences into clusters, where each cluster represents one meeting decision.
+## Installation
 
-**Input:** Decision sentences from STEP 2
-**Output:** Clusters with sentence IDs, texts, and speakers
+### Requirements
+- Python 3.10+
+- CUDA 11.8+ (optional, for GPU acceleration)
+- 8+ GB RAM (16+ GB recommended)
 
+### Setup
+
+```bash
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Download required models
+python -m spacy download en_core_web_sm
+```
+
+## Usage
+
+### Command Line
+
+```bash
+# Process single meeting
+python run_pipeline.py transcripts/meeting.txt
+
+# Process from stdin
+python run_pipeline.py < transcripts/meeting.txt
+
+# or
+python run_pipeline.py
+# (paste transcript, Ctrl+D to end)
+```
+
+### Programmatic API
+
+```python
+from pipeline import NLPActionExtractor
+
+extractor = NLPActionExtractor()
+tasks = extractor.run_pipeline(transcript_text)
+
+for task in tasks:
+    print(f"Task: {task['task']}")
+    print(f"Assignee: {task['assignee']}")
+    print(f"Deadline: {task['deadline']}")
+    print(f"Confidence: {task['confidence']:.0%}\n")
+```
+
+### Evaluation
+
+```python
+from evaluation import Evaluator
+
+evaluator = Evaluator(gold_annotations_dir="data/labeled")
+
+# Evaluate predicted tasks against gold annotations
+results = evaluator.evaluate_tasks(predicted_tasks, "meeting1")
+
+print(f"Precision: {results['extraction_metrics']['precision']:.3f}")
+print(f"Recall: {results['extraction_metrics']['recall']:.3f}")
+print(f"F1-Score: {results['extraction_metrics']['f1']:.3f}")
+```
+
+## Project Structure
+
+```
+.
+├── run_pipeline.py                      # Main entry point
+├── requirements.txt                     # Python dependencies
+│
+├── pipeline/
+│   ├── config.py                        # Centralized configuration
+│   ├── pipeline.py                      # Orchestrator class
+│   ├── preprocessing/                   # STEP 1
+│   │   ├── speaker_parsing.py
+│   │   ├── sentence_splitting.py
+│   │   ├── cleaning.py
+│   │   ├── stopword_filtering.py
+│   │   └── triplet_resolver.py
+│   ├── detection/                       # STEP 2
+│   │   └── detector.py
+│   ├── extraction/                      # STEP 3
+│   │   ├── assignee.py
+│   │   └── deadline.py
+│   └── postprocessing/                  # STEP 4
+│       ├── task_builder.py
+│       ├── confidence.py
+│       └── deduplication.py
+│
+├── evaluation/                          # Evaluation framework
+│   ├── metrics.py                       # Metrics calculator
+│   └── evaluate.py                      # Evaluation runner
+│
+├── data/
+│   ├── raw/                             # Input transcripts
+│   ├── processed/                       # Step outputs
+│   ├── outputs/                         # Final tasks
+│   └── labeled/                         # Gold annotations
+│
+├── models/                              # Cached model weights
+├── transcripts/                         # Sample meetings
+├── app/                                 # Flask web interface (optional)
+├── documentation/                       # Detailed docs
+└── test\ scripts/                       # Testing utilities
+```
+
+## Configuration
+
+All settings in `pipeline/config.py`:
+
+```python
+# Models
+NLI_MODEL = "cross-encoder/nli-distilroberta-base"
+QA_MODEL = "deepset/roberta-base-squad2"
+SUMMARIZATION_MODEL = "google/flan-t5-base"
+EMBEDDING_MODEL = "all-mpnet-base-v2"
+
+# Thresholds
+DECISION_THRESHOLD = 0.85
+DEDUPLICATION_THRESHOLD = 0.8
+
+# Data directories
+DATA_ROOT = "data"
+RAW_DATA_DIR = "data/raw"
+PROCESSED_DATA_DIR = "data/processed"
+OUTPUT_DATA_DIR = "data/outputs"
+LABELED_DATA_DIR = "data/labeled"
+```
+
+## Documentation
+
+- **[ARCHITECTURE.md](documentation/ARCHITECTURE.md)** - Detailed pipeline architecture and design decisions
+- **[data/labeled/README.md](data/labeled/README.md)** - Annotation format for gold-standard evaluation
+- **[models/README.md](models/README.md)** - Model management and fine-tuning
+- **[evaluation/README.md](evaluation/README.md)** - Evaluation framework documentation (if exists)
+
+## Models & Performance
+
+| Component | Model | Size | Threshold |
+|-----------|-------|------|-----------|
+| Parsing | spaCy en_core_web_sm | 40 MB | - |
+| Decision Detection | cross-encoder/nli-distilroberta-base | 250 MB | 0.85 |
+| QA Extraction | deepset/roberta-base-squad2 | 400 MB | 0.50 |
+| Description Gen | google/flan-t5-base | 990 MB | - |
+| Deduplication | all-mpnet-base-v2 | 420 MB | 0.80 |
+
+**Total:** ~2.1 GB (cached locally)  
+**Typical Runtime:** ~17s per meeting (100 sentences)
+
+## Example
+
+### Input
+```
+Alice: Let's start with the sprint planning for this week.
+Bob: I will handle the API refactor by Friday.
+Alice: Can you write the integration tests for the new endpoints?
+Charlie: I will write the tests by Wednesday.
+Diana: Please update the project documentation with the new API specs.
+```
+
+### Output
 ```json
 [
-  {"cluster_id": 0, "sentences": [4, 9], "texts": ["focus on the payment API", "finalize the pricing model"], "speakers": ["B", "B"]}
+  {
+    "task_id": "task_0",
+    "task": "Start the sprint planning for this week.",
+    "assignee": "Alice",
+    "deadline": null,
+    "confidence": 0.89
+  },
+  {
+    "task_id": "task_1",
+    "task": "Handle the API refactor.",
+    "assignee": "Bob",
+    "deadline": "Friday",
+    "confidence": 0.95
+  },
+  {
+    "task_id": "task_2",
+    "task": "Write the integration tests for the new endpoints.",
+    "assignee": "Alice",
+    "deadline": null,
+    "confidence": 0.89
+  },
+  {
+    "task_id": "task_3",
+    "task": "Write the tests.",
+    "assignee": "Charlie",
+    "deadline": "Wednesday",
+    "confidence": 0.95
+  },
+  {
+    "task_id": "task_4",
+    "task": "Update the project documentation with the new API specifications.",
+    "assignee": "Diana",
+    "deadline": null,
+    "confidence": 0.87
+  }
 ]
 ```
 
-**Implementation:** [STEP3_CLUSTERING.md](documentation/STEP3_CLUSTERING.md)
+## Development
 
-**Model:** all-mpnet-base-v2 (sentence embeddings) + AgglomerativeClustering
+### Testing
 
-###  STEP 4: Decision Summarization
-Converts decision clusters into concise, action-oriented decision statements.
-
-**Input:** Decision clusters from STEP 3
-**Output:** Summaries with evidence sentence IDs
-
-```json
-[
-  {"cluster_id": 0, "summary": "Focus on the payment API.", "evidence_sentences": [4, 9]}
-]
+```bash
+# Test individual pipeline stages
+python test\ scripts/test_decision_detection.py
+python test\ scripts/test_task_generation.py
+python test\ scripts/test_task_board.py
 ```
 
-**Implementation:** [STEP4_SUMMARIZATION.md](documentation/STEP4_SUMMARIZATION.md)
+### Evaluation Against Gold Standard
 
-**Model:** distilbart-cnn-12-6 (abstractive summarization) + rule-based cleaning
+```bash
+# Evaluate extraction quality
+python -c "from evaluation import Evaluator; e = Evaluator(); print(e.evaluate_all_meetings())"
+```
 
-###  STEP 5: Task Generation
-Converts decision summaries into structured task objects with ML-extracted assignee and deadline.
+## Troubleshooting
+
+### GPU Memory Issues
+- Reduce batch size in config
+- Use CPU only: `export CUDA_VISIBLE_DEVICES=""`
+
+### Model Download Issues
+```bash
+# Set HuggingFace cache location
+export HF_HOME=/path/to/large/disk
+
+# Pre-download models
+python -c "from transformers import AutoModel; AutoModel.from_pretrained('google/flan-t5-base')"
+```
+
+### Missing Confidence Scores
+- Check that all extraction steps completed
+- Verify input transcript format (Speaker: utterance)
+
+## Future Improvements
+
+- [ ] Multi-lingual support
+- [ ] Fine-tuning on domain-specific meetings
+- [ ] Coreference resolution
+- [ ] Temporal normalization (Friday → 2024-07-12)
+- [ ] Dialogue act recognition
+- [ ] Interactive refinement UI
+
+## Citation
+
+```bibtex
+@misc{meeting_action_extractor,
+  title = {Meeting Action Extractor: NLP Pipeline for Task Extraction},
+  author = {PDM},
+  year = {2024}
+}
+```
+
+## License
+
+[Add license information]
+
+## References
+
+- Reimers & Gurevych (2019): Sentence-BERT
+- de Marneffe et al. (2008): Stanford Dependencies
+- Yin et al. (2019): Zero-shot NLI
+- Devlin et al. (2019): BERT
+- Raffel et al. (2020): FLAN-T5
+
 
 **Input:** Decision summaries from STEP 4 + transcript from STEP 1
 **Output:** Structured tasks with metadata
