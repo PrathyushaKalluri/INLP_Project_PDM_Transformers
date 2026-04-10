@@ -2,11 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "experimentalServices": {
     "frontend": {
-      "rootDirectory": "kanban-app",
+      "root": "kanban-app",
       "routePrefix": "/"
     },
     "backend": {
-      "rootDirectory": "backend",
+      "root": "backend",
       "routePrefix": "/api"
     }
   }
