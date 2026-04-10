@@ -80,36 +80,6 @@ ACTION_VERBS = re.compile(
     re.I,
 )
 
-NON_TASK_PATTERNS = [
-    re.compile(r"^\s*good\s+(morning|afternoon|evening)\b", re.I),
-    re.compile(r"^\s*(hi|hello|hey|welcome)\b", re.I),
-    re.compile(r"\b(meet\s+again|schedule\s+(a\s+)?follow.?up)\b", re.I),
-    re.compile(r"^\s*(sounds?\s+good|perfect|great|agreed)\b", re.I),
-]
-
-CONVERSATIONAL_PATTERNS = [
-    r"^i\s+think\s+",
-    r"^we\s+should\s+",
-    r"^I\s+will\s+",
-    r"^you\s+should\s+",
-    r"^i\s+need\s+to\s+",
-    r"^i\s+m\s+going\s+to\s+",
-    r"^we\s+ll\s+",
-]
-
-FILLER_WORDS = [
-    r"\bfirst\b", r"\bjust\b", r"\bactually\b", r"\bbasically\b",
-    r"\bprobably\b", r"\bdefinitely\b", r"\bkind of\b", r"\bsort of\b",
-]
-
-DAYS_OF_WEEK = [
-    "monday", "tuesday", "wednesday", "thursday",
-    "friday", "saturday", "sunday",
-]
-MONTHS = [
-    "january", "february", "march", "april", "may", "june",
-    "july", "august", "september", "october", "november", "december",
-]
 
 NON_TASK_PATTERNS = [
     re.compile(r"^\s*good\s+(morning|afternoon|evening)\b", re.I),

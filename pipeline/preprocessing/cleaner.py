@@ -73,7 +73,10 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     
     # Remove common filler words patterns
-    text = re.sub(r'\bum\b|\buh\b|\blike\b(?!\s+\w+ing)', ' ', text, flags=re.I)
+    # Remove filler words: um, uh, and standalone 'like' only when used as filler
+    # (preceded by comma/start-of-string, not as preposition "tools like X" or verb "I like X")
+    text = re.sub(r'\bum\b|\buh\b', ' ', text, flags=re.I)
+    text = re.sub(r'(?<![a-zA-Z])\blike\b,?\s*(?=\b(I|we|you|he|she|it|they|the|this|that|so|yeah|um)\b)', ' ', text, flags=re.I)
     
     # Apply Indian English normalization
     text = normalize_indian_english(text)

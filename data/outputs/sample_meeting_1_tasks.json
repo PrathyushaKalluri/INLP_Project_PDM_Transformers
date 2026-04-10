@@ -1,79 +1,95 @@
 [
   {
-    "task_id": "task_1",
-    "task": "Let's start with the sprint planning for this week.",
-    "assignee": "Alice",
-    "deadline": null,
-    "confidence": 0.89,
-    "evidence": {
-      "text": "Let's start with the sprint planning for this week.",
-      "speaker": "Alice"
-    }
-  },
-  {
     "task_id": "task_2",
-    "task": "I will handle the API refactor by Friday.",
+    "task": "Handle The API refactor.",
     "assignee": "Bob",
     "deadline": "Friday",
-    "confidence": 0.9500000000000001,
+    "confidence": 0.8949804847570214,
     "evidence": {
       "text": "I will handle the API refactor by Friday.",
-      "speaker": "Bob"
-    }
-  },
-  {
-    "task_id": "task_3",
-    "task": "Can you write the integration tests for the new endpoints?",
-    "assignee": "Alice",
-    "deadline": null,
-    "confidence": 0.89,
-    "evidence": {
-      "text": "Charlie, can you write the integration tests for the new endpoints?",
-      "speaker": "Alice"
+      "speaker": "Bob",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "task_id": "task_4",
-    "task": "I will write the tests by Wednesday.",
+    "task": "Write The integration tests.",
     "assignee": "Charlie",
-    "deadline": "Wednesday",
-    "confidence": 0.9500000000000001,
+    "deadline": null,
+    "confidence": 0.7832772044871389,
     "evidence": {
-      "text": "Yes, I will write the tests by Wednesday.",
-      "speaker": "Charlie"
+      "text": "Charlie, can you write the integration tests for the new endpoints?",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "task_id": "task_5",
-    "task": "Diana, please update the project documentation with the new API specs.",
-    "assignee": "Diana",
-    "deadline": null,
-    "confidence": 0.89,
+    "task": "Write The tests.",
+    "assignee": "Charlie",
+    "deadline": "Wednesday",
+    "confidence": 0.875,
     "evidence": {
-      "text": "Diana, please update the project documentation with the new API specs.",
-      "speaker": "Alice"
+      "text": "Yes, I will write the tests by Wednesday.",
+      "speaker": "Charlie",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "task_id": "task_6",
-    "task": "I'll update the docs by Thursday.",
+    "task": "Update The project documentation.",
     "assignee": "Diana",
-    "deadline": "Thursday",
-    "confidence": 0.9500000000000001,
+    "deadline": null,
+    "confidence": 0.6719293702882032,
     "evidence": {
-      "text": "I'll update the docs by Thursday.",
-      "speaker": "Diana"
-    }
+      "text": "Diana, please update the project documentation with the new API specs.",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
+    },
+    "requires_manual_review": true
   },
   {
     "task_id": "task_7",
-    "task": "I'll look into the CI/CD pipeline and fix the failing builds.",
+    "task": "Update The docs.",
+    "assignee": "Diana",
+    "deadline": "Thursday",
+    "confidence": 0.875,
+    "evidence": {
+      "text": "I'll update the docs by Thursday.",
+      "speaker": "Diana",
+      "sentence_type": "general",
+      "hard_filtered": false
+    }
+  },
+  {
+    "task_id": "task_8",
+    "task": "Follow up on The pipeline issue.",
+    "assignee": "team",
+    "deadline": null,
+    "confidence": 0.6613848273782014,
+    "evidence": {
+      "text": "Let's also follow up on the deployment pipeline issue from last week.",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
+    },
+    "requires_manual_review": true
+  },
+  {
+    "task_id": "task_9",
+    "task": "Investigate The failing builds.",
     "assignee": "Bob",
     "deadline": null,
-    "confidence": 0.89,
+    "confidence": 0.815,
     "evidence": {
       "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
-      "speaker": "Bob"
+      "speaker": "Bob",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   }
 ]

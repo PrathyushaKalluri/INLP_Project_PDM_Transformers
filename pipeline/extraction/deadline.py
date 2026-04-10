@@ -4,7 +4,8 @@ import re
 from typing import List, Dict, Optional
 
 
-DEADLINE_PATTERNS = [
+# Pre-compiled deadline patterns (compiled once at module load, not per call)
+_DEADLINE_PATTERN_STRINGS = [
     r"\bby\s+(end\s+of\s+)?(next\s+)?"
     r"(monday|tuesday|wednesday|thursday|friday|saturday|sunday"
     r"|january|february|march|april|may|june"
@@ -28,6 +29,7 @@ DEADLINE_PATTERNS = [
     r"\btomorrow\b",
     r"\btoday\b",
 ]
+DEADLINE_PATTERNS = [re.compile(p, re.I) for p in _DEADLINE_PATTERN_STRINGS]
 
 _INVALID_DEADLINE_PATTERNS = [
     re.compile(r"^\s*(morning|afternoon|evening|night)\s*$", re.I),
@@ -64,8 +66,9 @@ class DeadlineExtractor:
             return
         
         try:
-            import spacy
-            self._nlp = spacy.load("en_core_web_sm")
+            # Reuse the spaCy model already loaded by sentence_splitter
+            from ..preprocessing.sentence_splitter import load_nlp_model
+            self._nlp = load_nlp_model()
             self.use_spacy = True
             print(f"[+] spaCy NER model loaded")
         except Exception as e:
@@ -87,8 +90,8 @@ class DeadlineExtractor:
         return True
     
     def _regex_extract(self, text: str) -> Optional[str]:
-        """Extract deadline using regex patterns."""
-        patterns = [re.compile(p, re.I) for p in DEADLINE_PATTERNS]
+        """Extract deadline using pre-compiled regex patterns."""
+        patterns = DEADLINE_PATTERNS  # Already pre-compiled at module level
         
         for pattern in patterns:
             match = pattern.search(text)

@@ -1,62 +1,142 @@
 [
   {
+    "raw_text": "Let's start with the sprint planning for this week.",
+    "assignee": "team",
+    "deadline": null,
+    "confidence": 0.7292862989781903,
+    "root_verb": "start",
+    "object": "the sprint planning",
+    "evidence": {
+      "text": "Let's start with the sprint planning for this week.",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
+    }
+  },
+  {
     "raw_text": "I will handle the API refactor by Friday.",
     "assignee": "Bob",
     "deadline": "Friday",
-    "confidence": 1.0,
+    "confidence": 0.8899609695140428,
+    "root_verb": "handle",
+    "object": "the API refactor",
     "evidence": {
       "text": "I will handle the API refactor by Friday.",
-      "speaker": "Bob"
+      "speaker": "Bob",
+      "sentence_type": "general",
+      "hard_filtered": false
+    }
+  },
+  {
+    "raw_text": "The current endpoints are too slow.",
+    "assignee": "Bob",
+    "deadline": null,
+    "confidence": 0.6165327187586094,
+    "root_verb": "be",
+    "object": "the API refactor",
+    "evidence": {
+      "text": "The current endpoints are too slow.",
+      "speaker": "Bob",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "raw_text": "Charlie, can you write the integration tests for the new endpoints?",
-    "assignee": "Alice",
+    "assignee": "Charlie",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.7865544089742778,
+    "root_verb": "write",
+    "object": "the integration tests",
     "evidence": {
       "text": "Charlie, can you write the integration tests for the new endpoints?",
-      "speaker": "Alice"
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "raw_text": "Yes, I will write the tests by Wednesday.",
     "assignee": "Charlie",
     "deadline": "Wednesday",
-    "confidence": 1.0,
+    "confidence": 0.85,
+    "root_verb": "write",
+    "object": "the tests",
     "evidence": {
       "text": "Yes, I will write the tests by Wednesday.",
-      "speaker": "Charlie"
+      "speaker": "Charlie",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "raw_text": "Diana, please update the project documentation with the new API specs.",
     "assignee": "Diana",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.5638587405764063,
+    "root_verb": "update",
+    "object": "the project documentation",
     "evidence": {
       "text": "Diana, please update the project documentation with the new API specs.",
-      "speaker": "Alice"
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "raw_text": "I'll update the docs by Thursday.",
     "assignee": "Diana",
     "deadline": "Thursday",
-    "confidence": 1.0,
+    "confidence": 0.85,
+    "root_verb": "update",
+    "object": "the docs",
     "evidence": {
       "text": "I'll update the docs by Thursday.",
-      "speaker": "Diana"
+      "speaker": "Diana",
+      "sentence_type": "general",
+      "hard_filtered": false
+    }
+  },
+  {
+    "raw_text": "Let's also follow up on the deployment pipeline issue from last week.",
+    "assignee": "team",
+    "deadline": null,
+    "confidence": 0.5427696547564027,
+    "root_verb": "follow",
+    "object": "the pipeline issue",
+    "evidence": {
+      "text": "Let's also follow up on the deployment pipeline issue from last week.",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   },
   {
     "raw_text": "I'll look into the CI/CD pipeline and fix the failing builds.",
     "assignee": "Bob",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.85,
+    "root_verb": "look",
+    "object": "the failing builds",
     "evidence": {
       "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
-      "speaker": "Bob"
+      "speaker": "Bob",
+      "sentence_type": "general",
+      "hard_filtered": false
+    }
+  },
+  {
+    "raw_text": "Let's meet again on Friday to review progress.",
+    "assignee": "team",
+    "deadline": "Friday",
+    "confidence": 0.5044872163345282,
+    "root_verb": "meet",
+    "object": "progress",
+    "evidence": {
+      "text": "Let's meet again on Friday to review progress.",
+      "speaker": "Alice",
+      "sentence_type": "general",
+      "hard_filtered": false
     }
   }
 ]

@@ -71,6 +71,7 @@ __all__ = [
     "normalize_indian_english",
     "filter_stopwords",
     "is_stop_sentence",
+    "resolve_triplets",
+    "flag_sentence_types",
     "normalize_to_meeting_format",
-    "post_process_metadata",
 ]

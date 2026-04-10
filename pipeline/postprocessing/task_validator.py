@@ -18,6 +18,10 @@ INVALID_TASK_PATTERNS = [
     r"^(what|any|do you have)",
     # Exclamations/emotions without action
     r"^(wow|fantastic|awesome|horrible|terrible)[\.\!\?]*$",
+    # Meeting scheduling/facilitation (not action items)
+    r"\b(meet\s+again|schedule\s+(a\s+)?follow[- ]?up|let'?s\s+meet)\b",
+    r"\b(wrap\s+up|let'?s\s+(start|begin|get\s+started|kick\s+off))\b",
+    r"\breview\s+progress\b",
 ]
 
 

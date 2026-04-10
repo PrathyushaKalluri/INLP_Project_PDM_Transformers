@@ -24,7 +24,7 @@ TEMPORAL_PREPS = {"by", "before", "after", "during", "over", "until", "since", "
 RESULTATIVE_VERBS = {"have", "get", "make", "keep"}
 WEAK_VERBS = {"be", "have", "do", "go", "get", "make", "let"}
 PRONOUNS = {"it", "that", "this", "them", "those", "these", "you", "me", "him", "her", "us"}
-KNOWN_SPEAKERS = {"PM", "Dev1", "Dev2", "QA", "Designer", "Everyone"}
+DEFAULT_KNOWN_SPEAKERS = {"PM", "Dev1", "Dev2", "QA", "Designer", "Everyone"}
 
 
 def fix_lets_subject(sent: Dict) -> Dict:
@@ -143,13 +143,14 @@ def extract_resultative_object(spacy_root) -> Optional[str]:
     return None
 
 
-def resolve_you_subject(sent: Dict, sentences: List[Dict], idx: int) -> Dict:
+def resolve_you_subject(sent: Dict, sentences: List[Dict], idx: int, known_speakers: set = None) -> Dict:
     """
     Fix #5: Resolve "you" subject to named addressee or previous speaker.
     
     Example: "Dev2, can you share..." → subject: "Dev2"
     Example: (no addressee) → subject: previous_turn_speaker
     """
+    effective_speakers = known_speakers or DEFAULT_KNOWN_SPEAKERS
     if sent.get("subject") != "you":
         return sent
     
@@ -161,7 +162,7 @@ def resolve_you_subject(sent: Dict, sentences: List[Dict], idx: int) -> Dict:
         # Remove greeting particles
         first_token = first_token.replace("please", "").replace("ok", "").strip()
         
-        if first_token in KNOWN_SPEAKERS:
+        if first_token in effective_speakers:
             sent["subject"] = first_token
             sent["subject_resolved"] = True
             return sent
@@ -274,7 +275,7 @@ def score_triplet(sent: Dict) -> Dict:
     return sent
 
 
-def resolve_triplets(sentences: List[Dict]) -> List[Dict]:
+def resolve_triplets(sentences: List[Dict], known_speakers: set = None) -> List[Dict]:
     """
     Main triplet resolution pipeline.
     
@@ -288,6 +289,7 @@ def resolve_triplets(sentences: List[Dict]) -> List[Dict]:
     
     Args:
         sentences: List of parsed sentence dictionaries
+        known_speakers: Optional set of speaker names for "you" resolution
         
     Returns:
         List of sentences with resolved triplets and confidence scores
@@ -303,7 +305,7 @@ def resolve_triplets(sentences: List[Dict]) -> List[Dict]:
     
     # Step 3-4: Resolve you subjects (needs index)
     for i, sent in enumerate(sentences):
-        resolve_you_subject(sent, sentences, i)
+        resolve_you_subject(sent, sentences, i, known_speakers=known_speakers)
     
     # Step 5: Anaphora resolution (needs full context)
     sentences = resolve_anaphora(sentences)

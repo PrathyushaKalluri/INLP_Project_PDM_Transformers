@@ -23,9 +23,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from pipeline.config import OUTPUT_DATA_DIR, PROCESSED_DATA_DIR
 from pipeline.preprocessing import parse_speakers, split_sentences, clean_sentences, filter_stopwords, resolve_triplets
+from pipeline.preprocessing.cleaner import flag_sentence_types
 from pipeline.detection import HybridDetector
+from pipeline.detection.enhanced_features import detect_meeting_type
 from pipeline.extraction import AssigneeExtractor, DeadlineExtractor
-from pipeline.postprocessing import TaskBuilder, ConfidenceScorer, Deduplicator
+from pipeline.postprocessing import TaskBuilder, ConfidenceScorer, Deduplicator, TaskValidator
 
 
 def load_transcript_from_file(path: Path) -> str:
@@ -133,18 +135,32 @@ def main():
     speaker_utterances = parse_speakers(raw_text)
     print(f"    * Parsed {len(speaker_utterances)} speaker utterances")
     
+    # Extract known speakers for downstream use
+    known_speakers = set(s.get("speaker", "") for s in speaker_utterances if s.get("speaker"))
+    print(f"    * Known speakers: {', '.join(sorted(known_speakers))}")
+    
     sentences = split_sentences(speaker_utterances)
     print(f"    * Split into {len(sentences)} sentences")
     
+    pre_clean_count = len(sentences)
     sentences = clean_sentences(sentences)
     print(f"    * Cleaned sentences (removed empty)")
     
+    pre_filter_count = len(sentences)
     sentences = filter_stopwords(sentences)
-    total_filtered = len(speaker_utterances) + len(split_sentences(speaker_utterances)) - len(sentences)
-    print(f"    * Filtered {total_filtered} stopword sentences")
+    filtered_count = pre_filter_count - len(sentences)
+    print(f"    * Filtered {filtered_count} stopword sentences")
     
-    sentences = resolve_triplets(sentences)
+    sentences = resolve_triplets(sentences, known_speakers=known_speakers)
     print(f"    * Resolved triplets and scored confidence")
+    
+    # Flag sentence types (observation, consequence, metric, general)
+    sentences = flag_sentence_types(sentences)
+    print(f"    * Flagged sentence types")
+    
+    # Detect meeting type (task_oriented, status_review, mixed)
+    meeting_type = detect_meeting_type(sentences)
+    print(f"    * Meeting type: {meeting_type}")
     
     # Save Step 1: Preprocessed sentences
     save_step_output(meeting_id, 1, sentences, "Preprocessing output saved to")
@@ -162,7 +178,15 @@ def main():
         use_context=True,   # Enable context window (prior 2 sentences)
         context_window=2
     )
-    detected = detector.detect_batch(sentences)
+    
+    # Initialize extractors with known speakers
+    assignee_extractor = AssigneeExtractor()
+    assignee_extractor.set_known_speakers(known_speakers)
+    deadline_extractor = DeadlineExtractor()
+    print("[+] QA model loaded")
+    print("[+] spaCy NER model loaded")
+    
+    detected = detector.detect_batch(sentences, meeting_type=meeting_type)
     decision_sentences = [s for s in detected if s.get("is_decision")]
     print(f"    * Detected {len(decision_sentences)} decision sentences")
     
@@ -183,19 +207,9 @@ def main():
         print(f"    [!] No decisions detected in {meeting_id}")
         return 1
     
-    if not decision_sentences:
-        print(f"    [!] No decisions detected in {meeting_id}")
-        return 1
-    
-    # ── STEP 3: METADATA EXTRACTION ──────────────────────────────────
+    # ── STEP 3: METADATA EXTRACTION ──────────────────────────────────────
     print("\n[3/4] METADATA EXTRACTION")
     print("-" * 60)
-    print("[*] Loading QA model: deepset/roberta-base-squad2")
-    
-    assignee_extractor = AssigneeExtractor()
-    deadline_extractor = DeadlineExtractor()
-    print("[+] QA model loaded")
-    print("[+] spaCy NER model loaded")
     
     task_definitions = []
     for sent in decision_sentences:
@@ -213,9 +227,13 @@ def main():
             "assignee": assignee,
             "deadline": deadline,
             "confidence": sent.get("confidence", 0.8),
+            "root_verb": sent.get("root_verb"),  # For triplet-based titles
+            "object": sent.get("object"),  # For triplet-based titles
             "evidence": {
                     "text": text,
                     "speaker": sent.get("speaker", "Unknown"),
+                    "sentence_type": sent.get("sentence_type", "general"),
+                    "hard_filtered": sent.get("hard_filtered", False),
                 }
             })
     
@@ -236,6 +254,14 @@ def main():
     
     # Score confidence
     tasks = ConfidenceScorer.score_batch(tasks)
+    
+    # Add manual review flags for borderline confidence
+    tasks = TaskValidator.add_manual_review_flags(tasks)
+    
+    # Filter invalid tasks (metrics, reactions, etc.)
+    before_validation = len(tasks)
+    tasks = TaskValidator.filter_batch(tasks, meeting_type=meeting_type)
+    print(f"    * Validated tasks: {before_validation} → {len(tasks)} (removed {before_validation - len(tasks)})")
     
     # Deduplicate
     tasks = Deduplicator.deduplicate(tasks)

@@ -49,15 +49,18 @@ class ConfidenceScorer:
         """
         scored_tasks = []
         for task in tasks:
-            confidence = ConfidenceScorer.compute_confidence(
-                detection_confidence=task.get("detection_confidence", 1.0),
+            # Use the detection confidence that flows through the pipeline
+            # (stored in the 'confidence' field from the detection stage)
+            det_conf = task.get("confidence", 1.0)
+            composite_confidence = ConfidenceScorer.compute_confidence(
+                detection_confidence=det_conf,
                 extraction_completeness=0.75 if task.get("assignee") else 0.5,
                 assignment_confidence=1.0 if task.get("assignee") else 0.5,
                 deadline_confidence=1.0 if task.get("deadline") else 0.6,
             )
             
             task_copy = task.copy()
-            task_copy["confidence"] = confidence
+            task_copy["confidence"] = composite_confidence
             scored_tasks.append(task_copy)
         
         return scored_tasks
