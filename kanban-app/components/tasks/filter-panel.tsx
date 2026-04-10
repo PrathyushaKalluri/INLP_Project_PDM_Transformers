@@ -52,10 +52,25 @@ export function FilterPanel() {
         <DropdownMenuCheckboxItem
           checked={filters.onlyMine}
           onCheckedChange={(checked) =>
-            setFilters({ onlyMine: Boolean(checked) })
+            setFilters({
+              onlyMine: Boolean(checked),
+              onlyUnassigned: Boolean(checked) ? false : filters.onlyUnassigned,
+            })
           }
         >
           Myself only
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuCheckboxItem
+          checked={filters.onlyUnassigned}
+          onCheckedChange={(checked) =>
+            setFilters({
+              onlyUnassigned: Boolean(checked),
+              onlyMine: Boolean(checked) ? false : filters.onlyMine,
+            })
+          }
+        >
+          Unassigned only
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuSeparator />

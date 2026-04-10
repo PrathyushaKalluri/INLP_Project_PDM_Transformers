@@ -65,7 +65,31 @@ export function Topbar() {
         <Switch
           id="my-task-toggle"
           checked={filters.onlyMine}
-          onCheckedChange={(checked) => setFilters({ onlyMine: checked })}
+          onCheckedChange={(checked) =>
+            setFilters({
+              onlyMine: checked,
+              onlyUnassigned: checked ? false : filters.onlyUnassigned,
+            })
+          }
+        />
+      </div>
+
+      <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
+        <Label
+          htmlFor="unassigned-task-toggle"
+          className="text-sm text-text-secondary"
+        >
+          Unassigned
+        </Label>
+        <Switch
+          id="unassigned-task-toggle"
+          checked={filters.onlyUnassigned}
+          onCheckedChange={(checked) =>
+            setFilters({
+              onlyUnassigned: checked,
+              onlyMine: checked ? false : filters.onlyMine,
+            })
+          }
         />
       </div>
 

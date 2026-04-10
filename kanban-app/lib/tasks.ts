@@ -61,6 +61,18 @@ export const applyTaskFilters = (
   today.setHours(0, 0, 0, 0);
 
   const filtered = tasks.filter((task) => {
+    const isUnassigned = !task.assigneeIds || task.assigneeIds.length === 0;
+
+    if (filters.onlyMine) {
+      if (!userId || isUnassigned || !task.assigneeIds.includes(userId)) {
+        return false;
+      }
+    }
+
+    if (filters.onlyUnassigned && !isUnassigned) {
+      return false;
+    }
+
     if (!task.deadline) {
       return filters.deadlineFilter === "all";
     }
@@ -71,10 +83,6 @@ export const applyTaskFilters = (
     }
 
     due.setHours(0, 0, 0, 0);
-
-    if (filters.onlyMine && userId && !task.assigneeIds.includes(userId)) {
-      return false;
-    }
 
     if (filters.customDate) {
       const custom = new Date(filters.customDate);

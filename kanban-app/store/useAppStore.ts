@@ -89,6 +89,7 @@ const loadThemeMode = (): ThemeMode => {
 const initialFilters: FilterState = {
   sortByDate: "asc",
   onlyMine: false,
+  onlyUnassigned: false,
   deadlineFilter: "all",
   customDate: null,
 };

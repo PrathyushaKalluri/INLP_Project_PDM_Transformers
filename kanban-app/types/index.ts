@@ -34,6 +34,7 @@ export interface Task {
 export interface FilterState {
   sortByDate: "asc" | "desc";
   onlyMine: boolean;
+  onlyUnassigned: boolean;
   deadlineFilter: "all" | "today" | "near" | "overdue";
   customDate: string | null;
 }
