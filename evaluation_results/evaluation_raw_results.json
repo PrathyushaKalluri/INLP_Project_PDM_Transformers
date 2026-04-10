@@ -1,0 +1,1263 @@
+[
+  {
+    "meeting_id": "sample_meeting_1",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_1.txt",
+    "raw_lines": 9,
+    "raw_chars": 643,
+    "step1_speakers": [
+      "Alice",
+      "Bob",
+      "Charlie",
+      "Diana"
+    ],
+    "step1_speaker_count": 4,
+    "step1_utterances": 9,
+    "step1_sentences_after_clean": 15,
+    "step1_sentences_after_filter": 11,
+    "step1_filtered_sentences": 4,
+    "step1_meeting_type": "task_oriented",
+    "step1_sentence_types": {
+      "general": 11
+    },
+    "step2_total_sentences": 11,
+    "step2_decisions_detected": 10,
+    "step2_detection_rate": 0.9090909090909091,
+    "step2_avg_confidence": 0.7183450007892457,
+    "step2_modal_boosted": 3,
+    "step2_avg_modal_boost": 0.24,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 0,
+      "medium (0.5-0.8)": 6,
+      "high (> 0.8)": 4
+    },
+    "step3_total": 10,
+    "step3_with_assignee": 10,
+    "step3_with_deadline": 4,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.4,
+    "step4_tasks_built": 10,
+    "step4_tasks_after_validation": 10,
+    "step4_tasks_removed_validation": 3,
+    "step4_tasks_final": 7,
+    "step4_avg_confidence": 0.7966531267015092,
+    "step4_completeness": 0.42857142857142855,
+    "step4_na_rate": 0.5714285714285714,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_2",
+        "task": "Handle The API refactor.",
+        "assignee": "Bob",
+        "deadline": "Friday",
+        "confidence": 0.8949804847570214,
+        "evidence": {
+          "text": "I will handle the API refactor by Friday.",
+          "speaker": "Bob",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_4",
+        "task": "Write The integration tests.",
+        "assignee": "Charlie",
+        "deadline": null,
+        "confidence": 0.7832772044871389,
+        "evidence": {
+          "text": "Charlie, can you write the integration tests for the new endpoints?",
+          "speaker": "Alice",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_5",
+        "task": "Write The tests.",
+        "assignee": "Charlie",
+        "deadline": "Wednesday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Yes, I will write the tests by Wednesday.",
+          "speaker": "Charlie",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Update The project documentation.",
+        "assignee": "Diana",
+        "deadline": null,
+        "confidence": 0.6719293702882032,
+        "evidence": {
+          "text": "Diana, please update the project documentation with the new API specs.",
+          "speaker": "Alice",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_7",
+        "task": "Update The docs.",
+        "assignee": "Diana",
+        "deadline": "Thursday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "I'll update the docs by Thursday.",
+          "speaker": "Diana",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_8",
+        "task": "Follow up on The pipeline issue.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6613848273782014,
+        "evidence": {
+          "text": "Let's also follow up on the deployment pipeline issue from last week.",
+          "speaker": "Alice",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_9",
+        "task": "Investigate The failing builds.",
+        "assignee": "Bob",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
+          "speaker": "Bob",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      }
+    ],
+    "elapsed_seconds": 40.72493505477905
+  },
+  {
+    "meeting_id": "sample_meeting_2",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_2.txt",
+    "raw_lines": 8,
+    "raw_chars": 595,
+    "step1_speakers": [
+      "Bob",
+      "Charlie",
+      "Diana"
+    ],
+    "step1_speaker_count": 3,
+    "step1_utterances": 8,
+    "step1_sentences_after_clean": 11,
+    "step1_sentences_after_filter": 10,
+    "step1_filtered_sentences": 1,
+    "step1_meeting_type": "task_oriented",
+    "step1_sentence_types": {
+      "general": 10
+    },
+    "step2_total_sentences": 10,
+    "step2_decisions_detected": 8,
+    "step2_detection_rate": 0.8,
+    "step2_avg_confidence": 0.687848573037288,
+    "step2_modal_boosted": 5,
+    "step2_avg_modal_boost": 0.5875,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 1,
+      "medium (0.5-0.8)": 5,
+      "high (> 0.8)": 2
+    },
+    "step3_total": 8,
+    "step3_with_assignee": 8,
+    "step3_with_deadline": 3,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.375,
+    "step4_tasks_built": 8,
+    "step4_tasks_after_validation": 8,
+    "step4_tasks_removed_validation": 1,
+    "step4_tasks_final": 7,
+    "step4_avg_confidence": 0.8032541439695524,
+    "step4_completeness": 0.5714285714285714,
+    "step4_na_rate": 0.42857142857142855,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_1",
+        "task": "Use Breakers.",
+        "assignee": "Charlie",
+        "deadline": null,
+        "confidence": 0.7437368483336623,
+        "evidence": {
+          "text": "The new gateway design uses rate limiting and circuit breakers.",
+          "speaker": "Charlie",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_2",
+        "task": "Need The throughput.",
+        "assignee": "Bob",
+        "deadline": "next Tuesday",
+        "confidence": 0.8526906784564044,
+        "evidence": {
+          "text": "I need to benchmark the throughput by next Tuesday.",
+          "speaker": "Bob",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_4",
+        "task": "Update The architecture diagram.",
+        "assignee": "Charlie",
+        "deadline": null,
+        "confidence": 0.7676287872448995,
+        "evidence": {
+          "text": "I should also update the architecture diagram to reflect the changes.",
+          "speaker": "Charlie",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Check The load balancer compatibility.",
+        "assignee": "Charlie",
+        "deadline": "Monday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I will check the load balancer compatibility by Monday.",
+          "speaker": "Charlie",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Check The load balancer compatibility.",
+        "assignee": "Charlie",
+        "deadline": "Monday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I will check the load balancer compatibility by Monday.",
+          "speaker": "Charlie",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_7",
+        "task": "Think The DevOps team.",
+        "assignee": "Diana",
+        "deadline": null,
+        "confidence": 0.7206790089385536,
+        "evidence": {
+          "text": "I think we need to coordinate with the DevOps team on this.",
+          "speaker": "Diana",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_8",
+        "task": "Reach Lead.",
+        "assignee": "Bob",
+        "deadline": "tomorrow",
+        "confidence": 0.7880436848133472,
+        "evidence": {
+          "text": "I'll reach out to the DevOps lead tomorrow.",
+          "speaker": "Bob",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      }
+    ],
+    "elapsed_seconds": 16.83290719985962
+  },
+  {
+    "meeting_id": "sample_meeting_3",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_3.txt",
+    "raw_lines": 14,
+    "raw_chars": 1302,
+    "step1_speakers": [
+      "Mike",
+      "Sarah",
+      "Tom",
+      "jen"
+    ],
+    "step1_speaker_count": 4,
+    "step1_utterances": 14,
+    "step1_sentences_after_clean": 28,
+    "step1_sentences_after_filter": 24,
+    "step1_filtered_sentences": 4,
+    "step1_meeting_type": "task_oriented",
+    "step1_sentence_types": {
+      "general": 24
+    },
+    "step2_total_sentences": 24,
+    "step2_decisions_detected": 19,
+    "step2_detection_rate": 0.7916666666666666,
+    "step2_avg_confidence": 0.6709001707776454,
+    "step2_modal_boosted": 11,
+    "step2_avg_modal_boost": 0.4789473684210526,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 1,
+      "medium (0.5-0.8)": 13,
+      "high (> 0.8)": 5
+    },
+    "step3_total": 19,
+    "step3_with_assignee": 19,
+    "step3_with_deadline": 4,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.21052631578947367,
+    "step4_tasks_built": 17,
+    "step4_tasks_after_validation": 17,
+    "step4_tasks_removed_validation": 0,
+    "step4_tasks_final": 17,
+    "step4_avg_confidence": 0.7386345170739059,
+    "step4_completeness": 0.23529411764705882,
+    "step4_na_rate": 0.7647058823529411,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_1",
+        "task": "Welcome Everyone.",
+        "assignee": "Sarah",
+        "deadline": null,
+        "confidence": 0.6463957448559352,
+        "evidence": {
+          "text": "Welcome everyone.",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_2",
+        "task": "Review The current state.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6655854645412222,
+        "evidence": {
+          "text": "Let's review the current state of the product dashboard.",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_3",
+        "task": "Need The database.",
+        "assignee": "Mike",
+        "deadline": "next Wednesday",
+        "confidence": 0.8022403969330495,
+        "evidence": {
+          "text": "I need to optimize the database queries by next Wednesday.",
+          "speaker": "Mike",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_4",
+        "task": "Profile The API response.",
+        "assignee": "Mike",
+        "deadline": null,
+        "confidence": 0.7085630912977907,
+        "evidence": {
+          "text": "Mike, can you also profile the API response times?",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_5",
+        "task": "Have The mockups.",
+        "assignee": "jen",
+        "deadline": "Friday",
+        "confidence": 0.7544973079539289,
+        "evidence": {
+          "text": "I'll have the mockups ready by Friday.",
+          "speaker": "jen",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Add Error.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.704181010170946,
+        "evidence": {
+          "text": "We should add error tracking to the onboarding flow.",
+          "speaker": "Tom",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_7",
+        "task": "Integrate Sentry.",
+        "assignee": "Tom",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I'll integrate Sentry before the next release.",
+          "speaker": "Tom",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_8",
+        "task": "Coordinate Tom.",
+        "assignee": "Jen",
+        "deadline": null,
+        "confidence": 0.7005251065900853,
+        "evidence": {
+          "text": "jen, please coordinate with Tom on the error states for each step.",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_9",
+        "task": "Need The old user data.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.8058824239337599,
+        "evidence": {
+          "text": "Also, we need to migrate the old user data.",
+          "speaker": "Mike",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_10",
+        "task": "Write The migration script.",
+        "assignee": "Mike",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I'll write the migration script this week.",
+          "speaker": "Mike",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_12",
+        "task": "Document The rollback steps.",
+        "assignee": "Tom",
+        "deadline": null,
+        "confidence": 0.8337561733174188,
+        "evidence": {
+          "text": "I will document the rollback steps.",
+          "speaker": "Tom",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_12",
+        "task": "Document The rollback steps.",
+        "assignee": "Tom",
+        "deadline": null,
+        "confidence": 0.8337561733174188,
+        "evidence": {
+          "text": "I will document the rollback steps.",
+          "speaker": "Tom",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_13",
+        "task": "Schedule A go meeting.",
+        "assignee": "Sarah",
+        "deadline": "next Thursday",
+        "confidence": 0.5,
+        "evidence": {
+          "text": "I will schedule a go/no-go meeting for next Thursday to review everything.",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_14",
+        "task": "Update The help documentation.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.7602602657654288,
+        "evidence": {
+          "text": "Should we also update the help documentation for the new onboarding?",
+          "speaker": "jen",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_15",
+        "task": "Draft The help articles.",
+        "assignee": "Jen",
+        "deadline": "next Monday",
+        "confidence": 0.8033169359177601,
+        "evidence": {
+          "text": "jen, can you draft the help articles by next Monday?",
+          "speaker": "Sarah",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_16",
+        "task": "Think Load tests.",
+        "assignee": "Tom",
+        "deadline": null,
+        "confidence": 0.7383496926925625,
+        "evidence": {
+          "text": "I think we should also run load tests before deploying.",
+          "speaker": "Tom",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_17",
+        "task": "Show Concurrent users.",
+        "assignee": "Mike",
+        "deadline": null,
+        "confidence": 0.6694770029690947,
+        "evidence": {
+          "text": "The current benchmarks show we can handle about 500 concurrent users.",
+          "speaker": "Mike",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      }
+    ],
+    "elapsed_seconds": 53.9090416431427
+  },
+  {
+    "meeting_id": "sample_meeting_4",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_4.txt",
+    "raw_lines": 16,
+    "raw_chars": 1707,
+    "step1_speakers": [
+      "Engineer1",
+      "Engineer2",
+      "Lead",
+      "SRE"
+    ],
+    "step1_speaker_count": 4,
+    "step1_utterances": 16,
+    "step1_sentences_after_clean": 29,
+    "step1_sentences_after_filter": 25,
+    "step1_filtered_sentences": 4,
+    "step1_meeting_type": "task_oriented",
+    "step1_sentence_types": {
+      "general": 24,
+      "observation": 1
+    },
+    "step2_total_sentences": 25,
+    "step2_decisions_detected": 21,
+    "step2_detection_rate": 0.84,
+    "step2_avg_confidence": 0.6530609938794877,
+    "step2_modal_boosted": 9,
+    "step2_avg_modal_boost": 0.36666666666666664,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 5,
+      "medium (0.5-0.8)": 8,
+      "high (> 0.8)": 8
+    },
+    "step3_total": 21,
+    "step3_with_assignee": 21,
+    "step3_with_deadline": 5,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.23809523809523808,
+    "step4_tasks_built": 21,
+    "step4_tasks_after_validation": 21,
+    "step4_tasks_removed_validation": 3,
+    "step4_tasks_final": 18,
+    "step4_avg_confidence": 0.7548506005302751,
+    "step4_completeness": 0.2222222222222222,
+    "step4_na_rate": 0.7777777777777778,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_2",
+        "task": "Catch This.",
+        "assignee": "Engineer2",
+        "deadline": null,
+        "confidence": 0.6018722815003013,
+        "evidence": {
+          "text": "I should have caught this during the load test last week.",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_4",
+        "task": "Focus Recurrence.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6237797573314611,
+        "evidence": {
+          "text": "Let's focus on action items to prevent recurrence.",
+          "speaker": "Lead",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_5",
+        "task": "Increase The pool limit.",
+        "assignee": "Engineer1",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I will increase the connection pool limit from 50 to 200 and add connection timeout monitoring.",
+          "speaker": "Engineer1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Need Automated alerts.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6962770145802578,
+        "evidence": {
+          "text": "We need to set up automated alerts for connection pool usage.",
+          "speaker": "SRE",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_7",
+        "task": "Configure CloudWatch alarms.",
+        "assignee": "SRE",
+        "deadline": "end of day",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "I'll configure CloudWatch alarms by end of day.",
+          "speaker": "SRE",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_8",
+        "task": "Add A dashboard panel.",
+        "assignee": "Engineer2",
+        "deadline": null,
+        "confidence": 0.663095743371954,
+        "evidence": {
+          "text": "Can you also add a dashboard panel for real-time connection metrics?",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_9",
+        "task": "Create The Grafana dashboard.",
+        "assignee": "SRE",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "Yes, I'll create the Grafana dashboard this afternoon.",
+          "speaker": "SRE",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_10",
+        "task": "Need The runbook.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.7471526746832138,
+        "evidence": {
+          "text": "We also need to update the runbook for this failure mode.",
+          "speaker": "Lead",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_11",
+        "task": "Document The troubleshooting steps.",
+        "assignee": "Engineer1",
+        "deadline": null,
+        "confidence": 0.7356136973534328,
+        "evidence": {
+          "text": "Engineer1, can you document the troubleshooting steps?",
+          "speaker": "Lead",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_12",
+        "task": "Update The runbook.",
+        "assignee": "Engineer1",
+        "deadline": "tomorrow morning",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I'll update the runbook by tomorrow morning.",
+          "speaker": "Engineer1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_13",
+        "task": "Redesign The load test suite.",
+        "assignee": "Engineer2",
+        "deadline": null,
+        "confidence": 0.6829607342662585,
+        "evidence": {
+          "text": "I'll redesign the load test suite to include connection pool stress scenarios.",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_14",
+        "task": "Should have it ready by next Tuesday.",
+        "assignee": "Engineer2",
+        "deadline": "next Tuesday",
+        "confidence": 0.8534029031057492,
+        "evidence": {
+          "text": "Should have it ready by next Tuesday.",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_15",
+        "task": "Implement Circuit breakers.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.7118496260902383,
+        "evidence": {
+          "text": "Let's also implement circuit breakers so the service degrades gracefully instead of going down completely.",
+          "speaker": "Lead",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_16",
+        "task": "Implement The breaker pattern.",
+        "assignee": "Engineer1",
+        "deadline": "next week",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "I'll implement the circuit breaker pattern using Resilience4j by end of next week.",
+          "speaker": "Engineer1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_17",
+        "task": "Review The other services.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6674925189122907,
+        "evidence": {
+          "text": "We should also review the other services for similar connection pool issues.",
+          "speaker": "SRE",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_18",
+        "task": "Audit All database connections.",
+        "assignee": "SRE",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I'll audit all database connections across microservices.",
+          "speaker": "SRE",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_20",
+        "task": "Need The incident timeline.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.718813858349795,
+        "evidence": {
+          "text": "We need to communicate the incident timeline to the customers.",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_21",
+        "task": "Draft The postmortem report.",
+        "assignee": "Engineer2",
+        "deadline": null,
+        "confidence": 0.815,
+        "evidence": {
+          "text": "I'll draft the postmortem report for the status page.",
+          "speaker": "Engineer2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      }
+    ],
+    "elapsed_seconds": 55.65816521644592
+  },
+  {
+    "meeting_id": "sample_meeting_5",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_5.txt",
+    "raw_lines": 17,
+    "raw_chars": 1638,
+    "step1_speakers": [
+      "Designer",
+      "Dev1",
+      "Dev2",
+      "PM",
+      "QA"
+    ],
+    "step1_speaker_count": 5,
+    "step1_utterances": 17,
+    "step1_sentences_after_clean": 39,
+    "step1_sentences_after_filter": 34,
+    "step1_filtered_sentences": 5,
+    "step1_meeting_type": "task_oriented",
+    "step1_sentence_types": {
+      "general": 33,
+      "metric": 1
+    },
+    "step2_total_sentences": 34,
+    "step2_decisions_detected": 27,
+    "step2_detection_rate": 0.7941176470588235,
+    "step2_avg_confidence": 0.6353602919544813,
+    "step2_modal_boosted": 9,
+    "step2_avg_modal_boost": 0.2777777777777778,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 4,
+      "medium (0.5-0.8)": 18,
+      "high (> 0.8)": 5
+    },
+    "step3_total": 27,
+    "step3_with_assignee": 27,
+    "step3_with_deadline": 10,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.37037037037037035,
+    "step4_tasks_built": 27,
+    "step4_tasks_after_validation": 27,
+    "step4_tasks_removed_validation": 5,
+    "step4_tasks_final": 22,
+    "step4_avg_confidence": 0.7438496927509892,
+    "step4_completeness": 0.4090909090909091,
+    "step4_na_rate": 0.5909090909090909,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_1",
+        "task": "Be Status.",
+        "assignee": "Dev1",
+        "deadline": null,
+        "confidence": 0.7326198856746493,
+        "evidence": {
+          "text": "Dev1, what's your status?",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_2",
+        "task": "Finish The OAuth integration.",
+        "assignee": "Dev1",
+        "deadline": "tomorrow",
+        "confidence": 0.8024216688787271,
+        "evidence": {
+          "text": "I'll finish the OAuth integration by tomorrow.",
+          "speaker": "Dev1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_4",
+        "task": "Ping Them.",
+        "assignee": "Dev1",
+        "deadline": null,
+        "confidence": 0.6977542679050999,
+        "evidence": {
+          "text": "Can you ping them for me?",
+          "speaker": "Dev1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_5",
+        "task": "Reach Those keys.",
+        "assignee": "PM",
+        "deadline": "today",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I will reach out to DevOps today and get you those keys.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_6",
+        "task": "Start The notification system.",
+        "assignee": "Dev2",
+        "deadline": "Today",
+        "confidence": 0.6675568131414487,
+        "evidence": {
+          "text": "Today I'm going to start on the notification system.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_7",
+        "task": "Great work.",
+        "assignee": "PM",
+        "deadline": null,
+        "confidence": 0.6719939527890972,
+        "evidence": {
+          "text": "Great work.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_8",
+        "task": "Need WebSockets.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.7700309449537028,
+        "evidence": {
+          "text": "We need to decide between WebSockets and polling.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_10",
+        "task": "Prepare A technical comparison document.",
+        "assignee": "Dev2",
+        "deadline": "end of day",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "I'll prepare a technical comparison document by end of day.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_11",
+        "task": "Send The bug reports.",
+        "assignee": "QA",
+        "deadline": null,
+        "confidence": 0.6034930009464908,
+        "evidence": {
+          "text": "Dev2, I'll send you the bug reports after this meeting.",
+          "speaker": "QA",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_12",
+        "task": "Fix Those bugs.",
+        "assignee": "Dev2",
+        "deadline": null,
+        "confidence": 0.7104030790846243,
+        "evidence": {
+          "text": "OK, I'll fix those bugs before moving to notifications.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_13",
+        "task": "Do Those bugs.",
+        "assignee": "Dev2",
+        "deadline": null,
+        "confidence": 0.6006971098319396,
+        "evidence": {
+          "text": "Should be done by this afternoon.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_14",
+        "task": "The new design system is ready.",
+        "assignee": "Designer",
+        "deadline": null,
+        "confidence": 0.7477372573548574,
+        "evidence": {
+          "text": "The new design system is ready.",
+          "speaker": "Designer",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_15",
+        "task": "Need The component library.",
+        "assignee": "Designer",
+        "deadline": null,
+        "confidence": 0.7325449571798495,
+        "evidence": {
+          "text": "I need everyone to review the component library.",
+          "speaker": "Designer",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_16",
+        "task": "Take A look.",
+        "assignee": "Designer",
+        "deadline": "Friday",
+        "confidence": 0.7224717041366084,
+        "evidence": {
+          "text": "Please take a look by Friday.",
+          "speaker": "Designer",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_18",
+        "task": "Review The design system.",
+        "assignee": "team",
+        "deadline": "Friday",
+        "confidence": 0.6722452615032759,
+        "evidence": {
+          "text": "Everyone, please review the design system by Friday and share your feedback.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_19",
+        "task": "Need Test cases.",
+        "assignee": "QA",
+        "deadline": null,
+        "confidence": 0.7180559294063593,
+        "evidence": {
+          "text": "I also need to write test cases for the notification system.",
+          "speaker": "QA",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_21",
+        "task": "Share The API documentation.",
+        "assignee": "Dev2",
+        "deadline": "Wednesday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I'll share the API documentation by Wednesday.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_21",
+        "task": "Share The API documentation.",
+        "assignee": "Dev2",
+        "deadline": "Wednesday",
+        "confidence": 0.875,
+        "evidence": {
+          "text": "Sure, I'll share the API documentation by Wednesday.",
+          "speaker": "Dev2",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_22",
+        "task": "Have The client demo.",
+        "assignee": "team",
+        "deadline": "next Monday",
+        "confidence": 0.7031079052087166,
+        "evidence": {
+          "text": "We have the client demo next Monday.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_23",
+        "task": "Need The demo environment.",
+        "assignee": "PM",
+        "deadline": null,
+        "confidence": 0.8035975004534193,
+        "evidence": {
+          "text": "I need to prepare the demo environment.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_24",
+        "task": "Handle That.",
+        "assignee": "PM",
+        "deadline": null,
+        "confidence": 0.703101657158791,
+        "evidence": {
+          "text": "Let me handle that over the weekend.",
+          "speaker": "PM",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      },
+      {
+        "task_id": "task_25",
+        "task": "Update The prototype.",
+        "assignee": "Designer",
+        "deadline": null,
+        "confidence": 0.804860344914107,
+        "evidence": {
+          "text": "I should update the prototype to reflect the latest changes before the demo.",
+          "speaker": "Designer",
+          "sentence_type": "general",
+          "hard_filtered": false
+        }
+      }
+    ],
+    "elapsed_seconds": 75.97578954696655
+  },
+  {
+    "meeting_id": "sample_meeting_6",
+    "transcript_path": "C:\\Users\\deept\\OneDrive\\Desktop\\INLP_Project_PDM_Transformers\\transcripts\\sample_meeting_6.txt",
+    "raw_lines": 15,
+    "raw_chars": 1230,
+    "step1_speakers": [
+      "Speaker1",
+      "Speaker2",
+      "Speaker3"
+    ],
+    "step1_speaker_count": 3,
+    "step1_utterances": 15,
+    "step1_sentences_after_clean": 28,
+    "step1_sentences_after_filter": 20,
+    "step1_filtered_sentences": 8,
+    "step1_meeting_type": "status_review",
+    "step1_sentence_types": {
+      "general": 13,
+      "metric": 3,
+      "observation": 2,
+      "consequence": 2
+    },
+    "step2_total_sentences": 20,
+    "step2_decisions_detected": 4,
+    "step2_detection_rate": 0.2,
+    "step2_avg_confidence": 0.6464755096121065,
+    "step2_modal_boosted": 1,
+    "step2_avg_modal_boost": 0.2125,
+    "step2_confidence_distribution": {
+      "low (< 0.5)": 0,
+      "medium (0.5-0.8)": 3,
+      "high (> 0.8)": 1
+    },
+    "step3_total": 4,
+    "step3_with_assignee": 4,
+    "step3_with_deadline": 1,
+    "step3_assignee_rate": 1.0,
+    "step3_deadline_rate": 0.25,
+    "step4_tasks_built": 4,
+    "step4_tasks_after_validation": 4,
+    "step4_tasks_removed_validation": 2,
+    "step4_tasks_final": 2,
+    "step4_avg_confidence": 0.6821223521496951,
+    "step4_completeness": 0.0,
+    "step4_na_rate": 1.0,
+    "step4_manual_review_count": 0,
+    "tasks": [
+      {
+        "task_id": "task_1",
+        "task": "We should look into that.",
+        "assignee": "team",
+        "deadline": null,
+        "confidence": 0.6876016037415329,
+        "evidence": {
+          "text": "We should look into that.",
+          "speaker": "Speaker1",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      },
+      {
+        "task_id": "task_2",
+        "task": "Be The popular choice.",
+        "assignee": "Speaker3",
+        "deadline": null,
+        "confidence": 0.6766431005578573,
+        "evidence": {
+          "text": "Yes, the mid-tier plan is the most popular choice now.",
+          "speaker": "Speaker3",
+          "sentence_type": "general",
+          "hard_filtered": false
+        },
+        "requires_manual_review": true
+      }
+    ],
+    "elapsed_seconds": 24.765000343322754
+  }
+]
