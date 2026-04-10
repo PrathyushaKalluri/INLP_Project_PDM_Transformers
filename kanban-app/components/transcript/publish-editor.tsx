@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,21 +9,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { listTasks } from "@/lib/tasks";
+import {
+  type TranscriptActionItem,
+  listTasks,
+  listTranscriptsApi,
+  publishActionItemsApi,
+  saveTranscriptEditsApi,
+} from "@/lib/tasks";
+import { listTeamMembersApi } from "@/lib/teams";
 import { useAppStore } from "@/store/useAppStore";
-import { publishActionItemsApi } from "@/lib/tasks";
+import type { User } from "@/types";
+
+type ApiError = Error & { status?: number };
+
+const isMethodNotAllowed = (error: unknown): boolean => {
+  const apiError = error as ApiError;
+  return apiError?.status === 405;
+};
 
 export function PublishEditor() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  const transcriptQueryId = searchParams.get("transcriptId");
 
   const projects = useAppStore((state) => state.projects);
+  const selectedProject = useAppStore((state) => state.selectedProject);
   const activeTranscriptId = useAppStore((state) => state.activeTranscriptId);
   const transcripts = useAppStore((state) => state.transcripts);
+  const tasks = useAppStore((state) => state.tasks);
   const addNotification = useAppStore((state) => state.addNotification);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
+  const setTranscripts = useAppStore((state) => state.setTranscripts);
+  const setActiveTranscript = useAppStore((state) => state.setActiveTranscript);
   const setTasks = useAppStore((state) => state.setTasks);
 
+  const [users, setUsers] = useState<User[]>([]);
   const transcript = useMemo(
     () =>
       transcripts.find((item) => item.id === activeTranscriptId) ??
@@ -36,15 +57,158 @@ export function PublishEditor() {
   const [meetingDate, setMeetingDate] = useState(
     new Date().toISOString().slice(0, 10),
   );
+  const [editableItems, setEditableItems] = useState<TranscriptActionItem[]>(
+    [],
+  );
+  const [isSavingEdits, setIsSavingEdits] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
-    setSummary(transcript?.summary ?? "");
-  }, [transcript?.id, transcript?.summary]);
+    if (!selectedProject && projects.length > 0) {
+      setSelectedProject(projects[0].id);
+    }
+  }, [selectedProject, projects, setSelectedProject]);
 
   const currentProject = projects.find(
-    (project) => project.id === transcript?.projectId,
+    (project) => project.id === selectedProject,
   );
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!currentProject?.teamId) {
+        setUsers([]);
+        return;
+      }
+
+      try {
+        const members = await listTeamMembersApi(currentProject.teamId);
+        setUsers(
+          members.map((m) => ({
+            id: m.user_id,
+            name: m.full_name,
+            email: m.email,
+            role: "member",
+            avatar: m.full_name
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+          })),
+        );
+      } catch (error) {
+        console.error("[PublishEditor] Failed to load team members:", error);
+        setUsers([]);
+      }
+    };
+
+    fetchTeamMembers();
+  }, [currentProject?.teamId]);
+
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    const loadTranscripts = async () => {
+      try {
+        const items = await listTranscriptsApi(selectedProject);
+        setTranscripts(items);
+
+        if (
+          transcriptQueryId &&
+          items.some((item) => item.id === transcriptQueryId)
+        ) {
+          setActiveTranscript(transcriptQueryId);
+          return;
+        }
+
+        if (
+          activeTranscriptId &&
+          items.some((item) => item.id === activeTranscriptId)
+        ) {
+          return;
+        }
+
+        setActiveTranscript(items[0]?.id ?? null);
+      } catch (error) {
+        console.error("[PublishEditor] Failed to load transcripts:", error);
+      }
+    };
+
+    loadTranscripts();
+  }, [
+    selectedProject,
+    transcriptQueryId,
+    activeTranscriptId,
+    setActiveTranscript,
+    setTranscripts,
+  ]);
+
+  useEffect(() => {
+    setSummary(transcript?.summary ?? "");
+    setEditableItems(transcript?.actionItems ?? []);
+  }, [transcript?.id, transcript?.summary, transcript?.actionItems]);
+
+  const saveEdits = async () => {
+    if (!transcript) return;
+
+    setIsSavingEdits(true);
+    try {
+      const updated = await saveTranscriptEditsApi({
+        transcriptId: transcript.id,
+        summary,
+        actionItems: editableItems,
+      });
+
+      setTranscripts(
+        transcripts.map((entry) =>
+          entry.id === updated.id
+            ? {
+                ...entry,
+                summary: updated.summary,
+                actionItems: updated.actionItems || [],
+              }
+            : entry,
+        ),
+      );
+      syncKanbanTasksFromEdits(updated.id, editableItems);
+
+      toast({
+        title: "Edits Saved",
+        description: "Meeting summary edits were saved.",
+      });
+    } catch (error) {
+      if (isMethodNotAllowed(error)) {
+        setTranscripts(
+          transcripts.map((entry) =>
+            entry.id === transcript.id
+              ? {
+                  ...entry,
+                  summary,
+                  actionItems: editableItems,
+                }
+              : entry,
+          ),
+        );
+        syncKanbanTasksFromEdits(transcript.id, editableItems);
+
+        toast({
+          title: "Saved Locally",
+          description:
+            "Your backend on port 8000 does not support saving transcript edits yet (405). Edits are kept locally and will still be used when publishing.",
+        });
+        return;
+      }
+
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to save edits";
+      toast({
+        title: "Save Failed",
+        description: errorMsg,
+      });
+    } finally {
+      setIsSavingEdits(false);
+    }
+  };
 
   const publish = async () => {
     if (!transcript || !currentProject) {
@@ -59,11 +223,30 @@ export function PublishEditor() {
         transcriptId: transcript.id,
       });
 
-      // SIMPLIFIED API CALL - Backend fetches action items from transcript
-      // No need to send actionItems from frontend
+      try {
+        await saveTranscriptEditsApi({
+          transcriptId: transcript.id,
+          summary,
+          actionItems: editableItems,
+        });
+      } catch (error) {
+        if (!isMethodNotAllowed(error)) {
+          throw error;
+        }
+
+        toast({
+          title: "Publish Using Local Edits",
+          description:
+            "Backend save endpoint returned 405, so publishing will continue with your local edited action items.",
+        });
+      }
+
       const result = await publishActionItemsApi({
         projectId: currentProject.id,
         transcriptId: transcript.id,
+        actionItems: editableItems.filter(
+          (item) => (item.title ?? "").trim().length > 0,
+        ),
       });
 
       console.log("[PublishEditor] Publish succeeded:", result);
@@ -109,6 +292,53 @@ export function PublishEditor() {
     }
   };
 
+  const updateEditableItem = (
+    index: number,
+    updates: Partial<TranscriptActionItem>,
+  ) => {
+    setEditableItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, ...updates } : item)),
+    );
+  };
+
+  const syncKanbanTasksFromEdits = (
+    transcriptId: string,
+    actionItems: TranscriptActionItem[],
+  ) => {
+    const transcriptTasks = tasks.filter(
+      (task) => task.transcriptReference === transcriptId,
+    );
+
+    if (transcriptTasks.length === 0) {
+      return;
+    }
+
+    setTasks(
+      tasks.map((task) => {
+        if (task.transcriptReference !== transcriptId) {
+          return task;
+        }
+
+        const taskIndex = transcriptTasks.findIndex(
+          (entry) => entry.id === task.id,
+        );
+        const actionItem = actionItems[taskIndex];
+
+        if (!actionItem) {
+          return task;
+        }
+
+        return {
+          ...task,
+          title: actionItem.title?.trim() || task.title,
+          description: actionItem.description?.trim() ?? task.description,
+          deadline: actionItem.deadline ?? task.deadline,
+          assigneeIds: actionItem.assignee ? [actionItem.assignee] : [],
+        };
+      }),
+    );
+  };
+
   if (!transcript) {
     return (
       <Card>
@@ -132,9 +362,32 @@ export function PublishEditor() {
             Finalize summary and editable action items.
           </p>
         </div>
-        <Button onClick={publish} disabled={isPublishing}>
-          {isPublishing ? "Publishing..." : "Publish"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="grid gap-1">
+            <Label htmlFor="transcript-select" className="text-xs">
+              Meeting summary
+            </Label>
+            <select
+              id="transcript-select"
+              value={transcript.id}
+              onChange={(event) => setActiveTranscript(event.target.value)}
+              className="rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary min-w-64"
+            >
+              {transcripts.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {new Date(item.createdAt).toLocaleString()} -{" "}
+                  {item.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Button variant="secondary" onClick={saveEdits} disabled={isSavingEdits}>
+            {isSavingEdits ? "Saving..." : "Save Edits"}
+          </Button>
+          <Button onClick={publish} disabled={isPublishing}>
+            {isPublishing ? "Publishing..." : "Publish"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
@@ -190,12 +443,12 @@ export function PublishEditor() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {!transcript.actionItems?.length ? (
+            {!editableItems.length ? (
               <p className="rounded-xl border border-dashed border-border p-3 text-sm text-text-secondary">
                 No action items generated yet.
               </p>
             ) : (
-              transcript.actionItems.map((item, idx) => (
+              editableItems.map((item, idx) => (
                 <div
                   key={`${transcript.id}-item-${idx}`}
                   className="rounded-xl border border-border p-3"
@@ -205,7 +458,9 @@ export function PublishEditor() {
                     <Input
                       id={`title-${idx}`}
                       value={item.title ?? ""}
-                      readOnly
+                      onChange={(event) =>
+                        updateEditableItem(idx, { title: event.target.value })
+                      }
                     />
                   </div>
                   <div className="mt-2 grid gap-2">
@@ -213,8 +468,47 @@ export function PublishEditor() {
                     <Textarea
                       id={`description-${idx}`}
                       value={item.description ?? ""}
-                      readOnly
+                      onChange={(event) =>
+                        updateEditableItem(idx, {
+                          description: event.target.value,
+                        })
+                      }
                     />
+                  </div>
+                  <div className="mt-2 grid gap-2 md:grid-cols-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor={`deadline-${idx}`}>Deadline</Label>
+                      <Input
+                        id={`deadline-${idx}`}
+                        type="date"
+                        value={item.deadline ?? ""}
+                        onChange={(event) =>
+                          updateEditableItem(idx, {
+                            deadline: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor={`assignee-${idx}`}>Assignee</Label>
+                      <select
+                        id={`assignee-${idx}`}
+                        value={item.assignee ?? ""}
+                        onChange={(event) =>
+                          updateEditableItem(idx, {
+                            assignee: event.target.value,
+                          })
+                        }
+                        className="rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary"
+                      >
+                        <option value="">Unassigned</option>
+                        {users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               ))

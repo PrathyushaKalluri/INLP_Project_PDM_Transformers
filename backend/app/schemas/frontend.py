@@ -70,6 +70,12 @@ class FrontendPublishRequest(BaseModel):
     """
     project_id: str = Field(alias="projectId")
     transcript_id: str = Field(alias="transcriptId")
+    action_items: list[dict] | None = Field(default=None, alias="actionItems")
+
+
+class FrontendTranscriptUpdateRequest(BaseModel):
+    summary: str | None = None
+    action_items: list[dict] | None = Field(default=None, alias="actionItems")
 
 
 class NotificationsReadRequest(BaseModel):

@@ -27,6 +27,7 @@ from app.schemas.frontend import (
     FrontendTaskCreate,
     FrontendTaskUpdate,
     FrontendTranscriptCreate,
+    FrontendTranscriptUpdateRequest,
     NotificationsReadRequest,
 )
 from app.schemas.meeting import MeetingCreate
@@ -356,6 +357,29 @@ async def frontend_get_transcript(transcript_id: str, current_user: User = Depen
     return payload
 
 
+@router.patch("/transcripts/{transcript_id}")
+async def frontend_update_transcript(
+    transcript_id: str,
+    data: FrontendTranscriptUpdateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    svc = MeetingService()
+    transcript = await svc.get_transcript_by_id(transcript_id, current_user.id)
+
+    updates = {}
+    if data.summary is not None:
+        updates["summary_text"] = data.summary
+    if data.action_items is not None:
+        updates["action_items"] = data.action_items
+
+    if updates:
+        transcript = await TranscriptRepository.update(transcript, **updates)
+
+    meeting = await MeetingRepository.get_by_id(str(transcript.meeting_id))
+    project_id = str(meeting.project_id) if meeting else None
+    return _transcript_to_frontend(transcript, project_id)
+
+
 async def _process_frontend_transcript(transcript_id: str) -> None:
     """Background task: Process transcript through NLP pipeline"""
     logger.info(f"[BG_PROCESS] Starting background transcript processing for {transcript_id}")
@@ -474,7 +498,7 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
     # ──────────────────────────────────────────────────────────────────────
     # 3. GET ACTION ITEMS FROM TRANSCRIPT (already extracted by NLP)
     # ──────────────────────────────────────────────────────────────────────
-    action_items = transcript.action_items or []
+    action_items = data.action_items if data.action_items is not None else (transcript.action_items or [])
     print(f"[PUBLISH] Found {len(action_items)} action items from transcript")
     
     if not action_items:
@@ -487,35 +511,128 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
     task_svc = TaskService()
     created_task_ids: list[str] = []
     duplicate_count = 0
+
+    existing_transcript_tasks = await Task.find(
+        {"transcript_reference": transcript.id, "is_manual": False}
+    ).to_list()
+    is_first_publish = len(existing_transcript_tasks) == 0
+
+    def _normalize_title(value: str | None) -> str:
+        return (value or "").strip().lower()
+
+    def _normalize_text(value: str | None) -> str:
+        return (value or "").strip()
+
+    def _normalize_assignee(value: str | None) -> str:
+        return str(value or "").strip()
+
+    def _normalize_deadline(value: str | None) -> str:
+        return str(value or "").strip()
+
+    def _parse_due_date(value: str | None):
+        raw = (value or "").strip()
+        if not raw:
+            return None
+        try:
+            return datetime.fromisoformat(raw).date()
+        except Exception:
+            print(f"[PUBLISH] ⚠ Invalid deadline '{raw}', storing as None")
+            return None
+
+    def _parse_assignee_id(value: str | None):
+        raw = (value or "").strip()
+        if not raw:
+            return None
+        try:
+            return PydanticObjectId(raw)
+        except Exception:
+            print(f"[PUBLISH] ⚠ Invalid assignee id '{raw}', storing as None")
+            return None
     
     for idx, action_item in enumerate(action_items):
         title = action_item.get("title") if isinstance(action_item, dict) else getattr(action_item, "title", "Untitled")
         description = action_item.get("description") if isinstance(action_item, dict) else getattr(action_item, "description", "")
+        assignee = action_item.get("assignee") if isinstance(action_item, dict) else getattr(action_item, "assignee", None)
+        deadline = action_item.get("deadline") if isinstance(action_item, dict) else getattr(action_item, "deadline", None)
         quote = action_item.get("quote") if isinstance(action_item, dict) else getattr(action_item, "transcript_quote", None)
         speaker = action_item.get("speaker") if isinstance(action_item, dict) else getattr(action_item, "speaker", None)
         timestamp = action_item.get("timestamp") if isinstance(action_item, dict) else getattr(action_item, "transcript_timestamp", None)
+
+        title = (title or "Untitled").strip()
+        if not title:
+            print("[PUBLISH] ⊘ Skipping empty action item title")
+            continue
         
         print(f"[PUBLISH] Processing item {idx + 1}: {title}")
         
-        # ── DEDUPLICATION: Check if (transcript_id + title) exists ──
-        existing = await Task.find_one({
-            "transcript_reference": transcript.id,
-            "title": title,
-            "is_manual": False,  # Don't count manually added tasks
-        })
-        
-        if existing:
-            print(f"[PUBLISH] ⊘ Skipping duplicate: transcript+title already exists")
+        matching_existing = next(
+            (
+                task
+                for task in existing_transcript_tasks
+                if _normalize_title(task.title) == _normalize_title(title)
+            ),
+            None,
+        )
+
+        if not is_first_publish and matching_existing:
+            existing_description = _normalize_text(matching_existing.description)
+            existing_assignee = _normalize_assignee(
+                str(matching_existing.assignee_id) if matching_existing.assignee_id else None
+            )
+            existing_deadline = _normalize_deadline(
+                matching_existing.due_date.isoformat() if matching_existing.due_date else None
+            )
+
+            incoming_description = _normalize_text(description)
+            parsed_incoming_assignee = _parse_assignee_id(assignee)
+            parsed_incoming_deadline = _parse_due_date(deadline)
+            incoming_assignee = _normalize_assignee(
+                str(parsed_incoming_assignee) if parsed_incoming_assignee else None
+            )
+            incoming_deadline = _normalize_deadline(
+                parsed_incoming_deadline.isoformat() if parsed_incoming_deadline else None
+            )
+
+            has_changed = (
+                existing_description != incoming_description
+                or existing_assignee != incoming_assignee
+                or existing_deadline != incoming_deadline
+            )
+
+            if not has_changed:
+                print("[PUBLISH] ⊘ Skipping unchanged task on re-publish")
+                duplicate_count += 1
+                continue
+
+            try:
+                matching_existing.description = description or ""
+                matching_existing.assignee_id = _parse_assignee_id(assignee)
+                matching_existing.due_date = _parse_due_date(deadline)
+                matching_existing.updated_at = datetime.utcnow()
+                await matching_existing.save()
+
+                created_task_ids.append(str(matching_existing.id))
+                print(f"[PUBLISH] ✓ Updated edited task: {str(matching_existing.id)}")
+            except Exception as e:
+                print(f"[PUBLISH] ✗ Failed to update task for '{title}': {e}")
+            continue
+
+        # During first publish (or for new titles on re-publish), avoid duplicates for this transcript.
+        if matching_existing:
+            print("[PUBLISH] ⊘ Skipping duplicate: transcript+title already exists")
             duplicate_count += 1
             continue
         
         # ── CREATE TASK ──
         try:
+            parsed_assignee_id = _parse_assignee_id(assignee)
             task = await task_svc.create_manual(
                 TaskCreate(
                     project_id=data.project_id,
                     title=title,
                     description=description or "",
+                    assignee_id=str(parsed_assignee_id) if parsed_assignee_id else None,
+                    due_date=_parse_due_date(deadline),
                 ),
                 current_user.id,
             )
@@ -535,6 +652,7 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
             await task.save()
             
             created_task_ids.append(str(task.id))
+            existing_transcript_tasks.append(task)
             print(f"[PUBLISH] ✓ Created task: {str(task.id)}")
             
         except Exception as e:

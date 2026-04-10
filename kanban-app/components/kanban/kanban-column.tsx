@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   projectId: string;
+  assigneeNamesById?: Record<string, string>;
   loading?: boolean;
 }
 
@@ -18,6 +19,7 @@ export function KanbanColumn({
   status,
   tasks,
   projectId,
+  assigneeNamesById,
   loading,
 }: KanbanColumnProps) {
   const columnDelayClass =
@@ -43,7 +45,16 @@ export function KanbanColumn({
               <Skeleton key={`skeleton-${index}`} className="h-28 w-full" />
             ))
           : tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} cardIndex={index} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                cardIndex={index}
+                assigneeName={
+                  task.assigneeIds.length > 0
+                    ? assigneeNamesById?.[task.assigneeIds[0]]
+                    : undefined
+                }
+              />
             ))}
 
         {!loading && tasks.length === 0 ? (

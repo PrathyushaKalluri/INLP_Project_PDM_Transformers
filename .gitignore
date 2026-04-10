@@ -197,3 +197,6 @@ STATUS_BOARD.txt
 # OS-specific helper scripts
 # *.bat
 # *.ps1
+.mongo-data/
+backups/
+uploads/

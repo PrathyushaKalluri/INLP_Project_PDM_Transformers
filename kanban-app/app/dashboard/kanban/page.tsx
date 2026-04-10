@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { applyTaskFilters } from "@/lib/tasks";
 import { listProjects } from "@/lib/projects";
 import { listTasks } from "@/lib/tasks";
+import { listTeamMembersApi } from "@/lib/teams";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function KanbanPage() {
@@ -22,6 +23,7 @@ export default function KanbanPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [assigneeNamesById, setAssigneeNamesById] = useState<Record<string, string>>({});
 
   // Fetch projects on mount
   useEffect(() => {
@@ -68,6 +70,29 @@ export default function KanbanPage() {
   const currentProject = projects.find(
     (project) => project.id === selectedProject,
   );
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!currentProject?.teamId) {
+        setAssigneeNamesById({});
+        return;
+      }
+
+      try {
+        const members = await listTeamMembersApi(currentProject.teamId);
+        const map = members.reduce<Record<string, string>>((acc, member) => {
+          acc[member.user_id] = member.full_name;
+          return acc;
+        }, {});
+        setAssigneeNamesById(map);
+      } catch (err) {
+        console.error("Failed to load team members:", err);
+        setAssigneeNamesById({});
+      }
+    };
+
+    fetchTeamMembers();
+  }, [currentProject?.teamId]);
 
   const filteredTasks = useMemo(() => {
     if (!selectedProject) {
@@ -127,6 +152,7 @@ export default function KanbanPage() {
             status="todo"
             tasks={todo}
             projectId={selectedProject}
+            assigneeNamesById={assigneeNamesById}
             loading={loading}
           />
           <KanbanColumn
@@ -134,6 +160,7 @@ export default function KanbanPage() {
             status="in-progress"
             tasks={inProgress}
             projectId={selectedProject}
+            assigneeNamesById={assigneeNamesById}
             loading={loading}
           />
           <KanbanColumn
@@ -141,6 +168,7 @@ export default function KanbanPage() {
             status="completed"
             tasks={completed}
             projectId={selectedProject}
+            assigneeNamesById={assigneeNamesById}
             loading={loading}
           />
         </div>

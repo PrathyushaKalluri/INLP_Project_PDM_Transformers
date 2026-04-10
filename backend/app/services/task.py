@@ -6,6 +6,7 @@ from app.models.task import (
     SuggestionReviewStatus, SubTask, Task, TaskEvidence, TaskNote,
     TaskStatus, TaskStatusHistory, TaskSuggestion,
 )
+from app.repositories.user import UserRepository
 from app.repositories.task import TaskRepository, TaskSuggestionRepository
 from app.schemas.task import (
     SuggestionApproveRequest, SuggestionReviewUpdate,
@@ -63,12 +64,7 @@ class TaskService:
         task = await self.get_or_404(task_id)
         await self.project_svc._require_project_member(task.project_id, requester_id)
 
-        # Project members can always move task status on board.
-        # Owner check is only enforced when editing non-status fields.
-        non_status_updates = data.model_dump(exclude_none=True)
-        non_status_updates.pop("status", None)
-        if non_status_updates:
-            self._require_task_owner(task, requester_id)
+        await self._require_manager_role(requester_id)
 
         old_status = task.status
         updates = {k: v for k, v in data.model_dump().items() if v is not None}
@@ -87,6 +83,11 @@ class TaskService:
         )
         await self._emit_project_task_event(str(task.project_id), "task_updated", task)
         return task
+
+    async def _require_manager_role(self, requester_id: PydanticObjectId) -> None:
+        user = await UserRepository.get_by_id(str(requester_id))
+        if not user or str(getattr(user, "role", "")).lower() != "manager":
+            raise forbidden("Only managers can edit tasks.")
 
     async def delete(self, task_id: str, requester_id: PydanticObjectId) -> None:
         task = await self.get_or_404(task_id)

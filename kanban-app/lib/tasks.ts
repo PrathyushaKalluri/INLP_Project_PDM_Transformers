@@ -6,10 +6,34 @@ const isSameDate = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+const parseDeadlineToLocalDate = (deadline: string): Date => {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(deadline);
+  if (dateOnly) {
+    const [, y, m, d] = dateOnly;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+
+  const dayFirst = /^(\d{2})[-/](\d{2})[-/](\d{4})$/.exec(deadline);
+  if (dayFirst) {
+    const [, d, m, y] = dayFirst;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+
+  return new Date(deadline);
+};
+
 export const getTaskUrgency = (
-  deadline: string,
+  deadline?: string | null,
 ): "default" | "near" | "overdue" => {
-  const due = new Date(deadline);
+  if (!deadline) {
+    return "default";
+  }
+
+  const due = parseDeadlineToLocalDate(deadline);
+  if (Number.isNaN(due.getTime())) {
+    return "default";
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   due.setHours(0, 0, 0, 0);
@@ -37,7 +61,15 @@ export const applyTaskFilters = (
   today.setHours(0, 0, 0, 0);
 
   const filtered = tasks.filter((task) => {
-    const due = new Date(task.deadline);
+    if (!task.deadline) {
+      return filters.deadlineFilter === "all";
+    }
+
+    const due = parseDeadlineToLocalDate(task.deadline);
+    if (Number.isNaN(due.getTime())) {
+      return filters.deadlineFilter === "all";
+    }
+
     due.setHours(0, 0, 0, 0);
 
     if (filters.onlyMine && userId && !task.assigneeIds.includes(userId)) {
@@ -74,8 +106,12 @@ export const applyTaskFilters = (
   });
 
   return filtered.sort((a, b) => {
-    const aTime = new Date(a.deadline).getTime();
-    const bTime = new Date(b.deadline).getTime();
+    const aTime = a.deadline
+      ? parseDeadlineToLocalDate(a.deadline).getTime()
+      : Number.MAX_SAFE_INTEGER;
+    const bTime = b.deadline
+      ? parseDeadlineToLocalDate(b.deadline).getTime()
+      : Number.MAX_SAFE_INTEGER;
     return filters.sortByDate === "asc" ? aTime - bTime : bTime - aTime;
   });
 };
@@ -114,6 +150,24 @@ interface BackendTask {
   createdAt?: string;
   updated_at?: string;
   updatedAt?: string;
+}
+
+export interface TranscriptActionItem {
+  title: string;
+  description?: string;
+  assignee?: string;
+  deadline?: string;
+}
+
+export interface BackendTranscript {
+  id: string;
+  projectId: string;
+  content: string;
+  summary: string;
+  processingStatus: string;
+  createdAt: string;
+  actionItemIds: string[];
+  actionItems: TranscriptActionItem[];
 }
 
 function normalizeTaskStatus(status: string): TaskStatus {
@@ -158,7 +212,7 @@ function mapBackendTask(data: BackendTask): Task {
     projectId: data.projectId || data.project_id || "",
     title: data.title,
     description: data.description || "",
-    deadline: data.deadline || data.due_date || new Date().toISOString(),
+    deadline: data.deadline || data.due_date || "",
     assigneeIds:
       data.assigneeIds || (data.assignee_id ? [data.assignee_id] : []),
     transcriptReference:
@@ -305,12 +359,7 @@ export async function createTranscriptApi(input: {
   processingStatus: string;
   createdAt: string;
   actionItemIds: string[];
-  actionItems: {
-    title: string;
-    description?: string;
-    assignee?: string;
-    deadline?: string;
-  }[];
+  actionItems: TranscriptActionItem[];
 }> {
   console.log("[TranscriptAPI] Creating transcript...", {
     projectId: input.projectId,
@@ -334,12 +383,7 @@ export async function createTranscriptApi(input: {
       processingStatus: string;
       createdAt: string;
       actionItemIds: string[];
-      actionItems: {
-        title: string;
-        description?: string;
-        assignee?: string;
-        deadline?: string;
-      }[];
+      actionItems: TranscriptActionItem[];
     }>("/frontend/transcripts", requestBody);
 
     console.log(
@@ -365,12 +409,7 @@ export async function getTranscriptStatusApi(transcriptId: string): Promise<{
   errorMessage?: string;
   summary?: string;
   actionItemIds: string[];
-  actionItems: {
-    title: string;
-    description?: string;
-    assignee?: string;
-    deadline?: string;
-  }[];
+  actionItems: TranscriptActionItem[];
 }> {
   console.log("[TranscriptAPI] Getting transcript status...", { transcriptId });
 
@@ -380,12 +419,7 @@ export async function getTranscriptStatusApi(transcriptId: string): Promise<{
     errorMessage?: string;
     summary?: string;
     actionItemIds: string[];
-    actionItems: {
-      title: string;
-      description?: string;
-      assignee?: string;
-      deadline?: string;
-    }[];
+    actionItems: TranscriptActionItem[];
   }>(`/frontend/transcripts/${transcriptId}`);
 
   console.log(
@@ -394,6 +428,29 @@ export async function getTranscriptStatusApi(transcriptId: string): Promise<{
   );
 
   return response;
+}
+
+/**
+ * LIST TRANSCRIPTS - Fetch meeting summaries/transcripts for a project
+ */
+export async function listTranscriptsApi(
+  projectId: string,
+): Promise<BackendTranscript[]> {
+  const response = await api.get<BackendTranscript[]>(
+    `/frontend/transcripts?projectId=${projectId}`,
+  );
+  return Array.isArray(response) ? response : [];
+}
+
+export async function saveTranscriptEditsApi(input: {
+  transcriptId: string;
+  summary?: string;
+  actionItems?: TranscriptActionItem[];
+}): Promise<BackendTranscript> {
+  return api.patch<BackendTranscript>(`/frontend/transcripts/${input.transcriptId}`, {
+    summary: input.summary,
+    actionItems: input.actionItems,
+  });
 }
 
 /**
@@ -409,6 +466,7 @@ export async function getTranscriptStatusApi(transcriptId: string): Promise<{
 export async function publishActionItemsApi(input: {
   projectId: string;
   transcriptId: string;
+  actionItems?: TranscriptActionItem[];
 }): Promise<{ success: boolean; taskIds: string[] }> {
   console.log("[PublishAPI] Publishing transcript to tasks");
   console.log("[PublishAPI] Request:", {
@@ -419,6 +477,7 @@ export async function publishActionItemsApi(input: {
   const requestBody = {
     projectId: input.projectId,
     transcriptId: input.transcriptId,
+    actionItems: input.actionItems,
   };
 
   try {

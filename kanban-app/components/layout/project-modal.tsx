@@ -55,8 +55,10 @@ export function ProjectModal({
   const [teamsLoading, setTeamsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch users and teams on mount
+  // Refresh teams and users whenever the modal opens.
   useEffect(() => {
+    if (!open) return;
+
     const fetchData = async () => {
       try {
         setTeamsLoading(true);
@@ -66,9 +68,9 @@ export function ProjectModal({
         setTeams(userTeams);
 
         // Use first team by default
-        if (userTeams.length > 0) {
+        if (!editing && userTeams.length > 0) {
           setSelectedTeam(userTeams[0].id);
-        } else {
+        } else if (!editing && userTeams.length === 0) {
           setError("No teams found. Please contact your administrator.");
         }
 
@@ -92,7 +94,7 @@ export function ProjectModal({
     };
 
     fetchData();
-  }, [editing]);
+  }, [open, editing]);
 
   const canSave =
     name.trim().length >= 3 &&
