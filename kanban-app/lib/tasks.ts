@@ -86,22 +86,67 @@ export const applyTaskFilters = (
 
 interface BackendTask {
   id: string;
-  project_id: string;
-  team_id: string;
-  meeting_id: string | null;
-  task_suggestion_id: string | null;
+  project_id?: string;
+  projectId?: string;
+  team_id?: string;
+  teamId?: string;
+  meeting_id?: string | null;
+  meetingId?: string | null;
+  task_suggestion_id?: string | null;
+  taskSuggestionId?: string | null;
   title: string;
   description: string | null;
-  status: TaskStatus;
-  priority: string;
-  assignee_id: string | null;
-  owner_id: string | null;
-  created_by: string;
-  due_date: string | null;
-  is_manual: boolean;
-  position: number;
-  created_at: string;
-  updated_at: string;
+  status: string;
+  priority?: string;
+  assignee_id?: string | null;
+  assigneeIds?: string[];
+  owner_id?: string | null;
+  ownerId?: string | null;
+  created_by?: string;
+  createdBy?: string;
+  due_date?: string | null;
+  deadline?: string | null;
+  transcript_reference?: string | null;
+  transcriptReference?: string | null;
+  is_manual?: boolean;
+  position?: number;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
+}
+
+function normalizeTaskStatus(status: string): TaskStatus {
+  const value = (status || "").toUpperCase();
+  if (
+    value === "IN_PROGRESS" ||
+    value === "IN-PR0GRESS" ||
+    value === "IN_REVIEW"
+  ) {
+    return "in-progress";
+  }
+  if (value === "DONE" || value === "COMPLETED" || value === "CANCELLED") {
+    return "completed";
+  }
+  return "todo";
+}
+
+function toBackendTaskStatus(status?: TaskStatus): string | undefined {
+  if (!status) {
+    return undefined;
+  }
+
+  if (status === "todo") {
+    return "TODO";
+  }
+  if (status === "in-progress") {
+    return "IN_PROGRESS";
+  }
+  if (status === "completed") {
+    return "DONE";
+  }
+
+  return undefined;
 }
 
 /**
@@ -110,13 +155,19 @@ interface BackendTask {
 function mapBackendTask(data: BackendTask): Task {
   return {
     id: data.id,
-    projectId: data.project_id,
+    projectId: data.projectId || data.project_id || "",
     title: data.title,
     description: data.description || "",
-    deadline: data.due_date || new Date().toISOString(),
-    assigneeIds: data.assignee_id ? [data.assignee_id] : [],
-    transcriptReference: data.meeting_id || "",
-    status: data.status,
+    deadline: data.deadline || data.due_date || new Date().toISOString(),
+    assigneeIds:
+      data.assigneeIds || (data.assignee_id ? [data.assignee_id] : []),
+    transcriptReference:
+      data.transcriptReference ||
+      data.transcript_reference ||
+      data.meetingId ||
+      data.meeting_id ||
+      "",
+    status: normalizeTaskStatus(data.status),
   };
 }
 
@@ -142,15 +193,19 @@ export async function listTasks(filters?: {
   console.log("[TasksAPI] Listing tasks:", { query });
 
   try {
-    const response = await api.get<{
-      items: BackendTask[];
-      total: number;
-    }>(`/frontend/tasks?${query}`);
+    const response = await api.get<
+      BackendTask[] | { items?: BackendTask[]; total?: number }
+    >(`/frontend/tasks?${query}`);
 
-    console.log("[TasksAPI] ✓ Tasks loaded:", response.items?.length || 0);
+    const items = Array.isArray(response) ? response : response.items || [];
+    const total = Array.isArray(response)
+      ? response.length
+      : response.total || items.length;
+
+    console.log("[TasksAPI] ✓ Tasks loaded:", items.length);
     return {
-      tasks: (response.items || []).map(mapBackendTask),
-      total: response.total || 0,
+      tasks: items.map(mapBackendTask),
+      total,
     };
   } catch (error) {
     console.error("[TasksAPI] ✗ Failed to load tasks:", error);
@@ -165,7 +220,7 @@ export async function listTasks(filters?: {
  * Get single task by ID
  */
 export async function getTaskById(taskId: string): Promise<Task> {
-  const data = await api.get<BackendTask>(`/tasks/${taskId}`);
+  const data = await api.get<BackendTask>(`/frontend/tasks/${taskId}`);
   return mapBackendTask(data);
 }
 
@@ -182,7 +237,16 @@ export async function createTaskApi(input: {
   priority?: string;
   status?: TaskStatus;
 }): Promise<Task> {
-  const data = await api.post<BackendTask>("/tasks", input);
+  const payload = {
+    projectId: input.project_id,
+    title: input.title,
+    description: input.description,
+    assigneeIds: input.assignee_id ? [input.assignee_id] : [],
+    ownerId: input.owner_id,
+    deadline: input.due_date,
+  };
+
+  const data = await api.post<BackendTask>("/frontend/tasks", payload);
   return mapBackendTask(data);
 }
 
@@ -202,7 +266,20 @@ export async function updateTaskApi(
     position?: number;
   },
 ): Promise<Task> {
-  const data = await api.patch<BackendTask>(`/tasks/${taskId}`, updates);
+  const payload = {
+    title: updates.title,
+    description: updates.description,
+    status: toBackendTaskStatus(updates.status),
+    priority: updates.priority,
+    assigneeIds: updates.assignee_id ? [updates.assignee_id] : undefined,
+    ownerId: updates.owner_id,
+    deadline: updates.due_date,
+  };
+
+  const data = await api.patch<BackendTask>(
+    `/frontend/tasks/${taskId}`,
+    payload,
+  );
   return mapBackendTask(data);
 }
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { listTasks } from "@/lib/tasks";
 import { useAppStore } from "@/store/useAppStore";
 import { publishActionItemsApi } from "@/lib/tasks";
 
@@ -20,6 +21,8 @@ export function PublishEditor() {
   const activeTranscriptId = useAppStore((state) => state.activeTranscriptId);
   const transcripts = useAppStore((state) => state.transcripts);
   const addNotification = useAppStore((state) => state.addNotification);
+  const setSelectedProject = useAppStore((state) => state.setSelectedProject);
+  const setTasks = useAppStore((state) => state.setTasks);
 
   const transcript = useMemo(
     () =>
@@ -66,6 +69,13 @@ export function PublishEditor() {
       console.log("[PublishEditor] Publish succeeded:", result);
 
       if (result.success) {
+        // Ensure kanban opens on the same project where tasks were published.
+        setSelectedProject(currentProject.id);
+
+        // Preload latest tasks so users see published items immediately after redirect.
+        const refreshed = await listTasks({ projectId: currentProject.id });
+        setTasks(refreshed.tasks);
+
         addNotification({
           message: `Published ${result.taskIds.length} action items for ${currentProject.name}.`,
           type: "success",
