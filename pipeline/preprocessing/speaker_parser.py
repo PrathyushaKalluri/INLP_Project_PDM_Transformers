@@ -111,6 +111,21 @@ def parse_speakers(transcript: str) -> List[Dict]:
             })
             turn_id += 1
             continue
+
+        # Fallback for lines without explicit speaker markers.
+        # Keep text instead of dropping it, otherwise downstream extraction can become empty.
+        if speakers:
+            # Treat as continuation of the previous turn.
+            prev_text = speakers[-1].get("text", "")
+            speakers[-1]["text"] = f"{prev_text} {line}".strip()
+        else:
+            speakers.append({
+                "turn_id": turn_id,
+                "speaker": "unknown",
+                "timestamp": None,
+                "text": line,
+            })
+            turn_id += 1
     
     if not speakers:
         print("[!] Warning: No speakers detected. Check transcript format.")

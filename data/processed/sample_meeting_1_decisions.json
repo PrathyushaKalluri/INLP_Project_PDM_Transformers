@@ -1,28 +1,5 @@
 [
   {
-    "sentence_id": 1,
-    "speaker": "Alice",
-    "text": "Good morning everyone.",
-    "root_verb": null,
-    "object": null,
-    "subject": "Alice",
-    "turn_id": 1,
-    "triplet_confidence": 0.9,
-    "triplet_flags": [
-      "null_object"
-    ],
-    "is_decision": false,
-    "confidence": 0.0,
-    "method": "hybrid",
-    "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.6344233813436467,
-    "modal_boost": 0.0,
-    "downward_prior": 0.7,
-    "adjusted_confidence": 0.5202271727017902,
-    "context_decision_type": "commitment",
-    "context_confidence": 0.6344233813436467
-  },
-  {
     "sentence_id": 2,
     "speaker": "Alice",
     "text": "Let's start with the sprint planning for this week.",
@@ -35,16 +12,19 @@
     "triplet_flags": [
       "resolved_via_context"
     ],
-    "is_decision": false,
-    "confidence": 0.0,
+    "is_decision": true,
+    "confidence": 0.7292862176723804,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.8893732405138067,
+    "transformer_confidence": 0.8893734361858299,
+    "confidence_zone": "high",
+    "requires_manual_review": false,
     "modal_boost": 0.0,
     "downward_prior": 0.7,
-    "adjusted_confidence": 0.677467441384189,
+    "has_negation": false,
+    "adjusted_confidence": 0.7292862176723804,
     "context_decision_type": "commitment",
-    "context_confidence": 0.7598267009209757
+    "context_confidence": 0.8893734361858299
   },
   {
     "sentence_id": 4,
@@ -57,15 +37,20 @@
     "triplet_confidence": 1.0,
     "triplet_flags": [],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.8899609427965531,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.8887246131204567,
+    "transformer_confidence": 0.8887245950557287,
+    "confidence_zone": "high",
+    "requires_manual_review": false,
     "modal_boost": 0.9,
-    "downward_prior": 1.0,
-    "adjusted_confidence": 0.9107463230891729,
+    "downward_prior": 0.7,
+    "has_negation": false,
+    "adjusted_confidence": 0.8899609427965531,
     "context_decision_type": "commitment",
-    "context_confidence": 0.7768658077229322
+    "context_confidence": 0.8867415321828678,
+    "is_turn_pair_acceptance": true,
+    "paired_request_idx": 0
   },
   {
     "sentence_id": 5,
@@ -81,16 +66,19 @@
       "resolved_via_context",
       "weak_root_verb"
     ],
-    "is_decision": false,
-    "confidence": 0.0,
+    "is_decision": true,
+    "confidence": 0.6165324169750196,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.6243983179877577,
+    "transformer_confidence": 0.6243983135459957,
+    "confidence_zone": "review",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
     "downward_prior": 0.7,
-    "adjusted_confidence": 0.6165323719136425,
+    "has_negation": false,
+    "adjusted_confidence": 0.6165324169750196,
     "context_decision_type": "commitment",
-    "context_confidence": 0.8857126958969608
+    "context_confidence": 0.8857128132142534
   },
   {
     "sentence_id": 7,
@@ -106,15 +94,18 @@
       "resolved_via_context"
     ],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.7865544480714706,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.9006607746147627,
+    "transformer_confidence": 0.9006611525990293,
+    "confidence_zone": "high",
+    "requires_manual_review": false,
     "modal_boost": 0.6,
-    "downward_prior": 1.0,
-    "adjusted_confidence": 0.9002768015260334,
+    "downward_prior": 0.7,
+    "has_negation": false,
+    "adjusted_confidence": 0.7865544480714706,
     "context_decision_type": "commitment",
-    "context_confidence": 0.7506920038150836
+    "context_confidence": 0.7506919099496955
   },
   {
     "sentence_id": 8,
@@ -127,15 +118,20 @@
     "triplet_confidence": 1.0,
     "triplet_flags": [],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.85,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.9111061876432582,
+    "transformer_confidence": 0.911106585830729,
+    "confidence_zone": "high",
+    "requires_manual_review": false,
     "modal_boost": 0.9,
-    "downward_prior": 1.0,
-    "adjusted_confidence": 0.8164742429840504,
+    "downward_prior": 0.7,
+    "has_negation": false,
+    "adjusted_confidence": 0.761138883549805,
     "context_decision_type": "commitment",
-    "context_confidence": 0.5411856074601258
+    "context_confidence": 0.5411852937522471,
+    "is_turn_pair_acceptance": true,
+    "paired_request_idx": 3
   },
   {
     "sentence_id": 9,
@@ -148,15 +144,18 @@
     "triplet_confidence": 1.0,
     "triplet_flags": [],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.5638590134336847,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.874540268166394,
+    "transformer_confidence": 0.8745401370516114,
+    "confidence_zone": "review",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
-    "downward_prior": 1.0,
-    "adjusted_confidence": 0.7212763621231557,
+    "downward_prior": 0.7,
+    "has_negation": false,
+    "adjusted_confidence": 0.5638590134336847,
     "context_decision_type": "discussion",
-    "context_confidence": 0.49138050305829845
+    "context_confidence": 0.49138038968002007
   },
   {
     "sentence_id": 10,
@@ -169,15 +168,20 @@
     "triplet_confidence": 1.0,
     "triplet_flags": [],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.85,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.8398583758583459,
+    "transformer_confidence": 0.8398578800102727,
+    "confidence_zone": "high",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
-    "downward_prior": 1.0,
-    "adjusted_confidence": 0.8351544620191098,
+    "downward_prior": 0.7,
+    "has_negation": false,
+    "adjusted_confidence": 0.6839799250059612,
     "context_decision_type": "commitment",
-    "context_confidence": 0.8280985912602556
+    "context_confidence": 0.8280990385041166,
+    "is_turn_pair_acceptance": true,
+    "paired_request_idx": 5
   },
   {
     "sentence_id": 12,
@@ -192,16 +196,19 @@
     "triplet_flags": [
       "resolved_via_context"
     ],
-    "is_decision": false,
-    "confidence": 0.0,
+    "is_decision": true,
+    "confidence": 0.5427698382732541,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.7037157886755029,
+    "transformer_confidence": 0.703715670488758,
+    "confidence_zone": "review",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
     "downward_prior": 0.7,
-    "adjusted_confidence": 0.5427694734915135,
+    "has_negation": false,
+    "adjusted_confidence": 0.5427698382732541,
     "context_decision_type": "commitment",
-    "context_confidence": 0.6180221056195058
+    "context_confidence": 0.6180231416699392
   },
   {
     "sentence_id": 13,
@@ -214,15 +221,40 @@
     "triplet_confidence": 1.0,
     "triplet_flags": [],
     "is_decision": true,
-    "confidence": 1.0,
+    "confidence": 0.85,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.7985977640166492,
+    "transformer_confidence": 0.7985972864921383,
+    "confidence_zone": "high",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
     "downward_prior": 0.7,
-    "adjusted_confidence": 0.5492917675332242,
+    "has_negation": false,
+    "adjusted_confidence": 0.5492915112623915,
     "context_decision_type": "commitment",
-    "context_confidence": 0.5347017666155789
+    "context_confidence": 0.5347016273392335,
+    "is_turn_pair_acceptance": true,
+    "paired_request_idx": 7
+  },
+  {
+    "sentence_id": 14,
+    "speaker": "Alice",
+    "text": "Sounds good.",
+    "root_verb": "sound",
+    "object": "the pipeline issue",
+    "subject": "Alice",
+    "turn_id": 9,
+    "object_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ],
+    "is_decision": false,
+    "confidence": 0.1,
+    "method": "rule_based",
+    "hard_filtered": true,
+    "confidence_zone": "low",
+    "requires_manual_review": false
   },
   {
     "sentence_id": 15,
@@ -237,15 +269,18 @@
     "triplet_flags": [
       "resolved_via_context"
     ],
-    "is_decision": false,
-    "confidence": 0.0,
+    "is_decision": true,
+    "confidence": 0.5044873423839669,
     "method": "hybrid",
     "transformer_decision_type": "commitment",
-    "transformer_confidence": 0.6351861346582149,
+    "transformer_confidence": 0.6351861558978449,
+    "confidence_zone": "review",
+    "requires_manual_review": true,
     "modal_boost": 0.0,
     "downward_prior": 0.7,
-    "adjusted_confidence": 0.4367546599774362,
+    "has_negation": false,
+    "adjusted_confidence": 0.5044873423839669,
     "context_decision_type": "commitment",
-    "context_confidence": 0.42494120855246476
+    "context_confidence": 0.5942728922671803
   }
 ]

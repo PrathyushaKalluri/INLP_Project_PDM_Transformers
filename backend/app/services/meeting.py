@@ -103,24 +103,41 @@ class MeetingService:
 
     async def process_transcript(self, transcript_id: str) -> None:
         """Run NLP pipeline and persist results. Called from background task."""
+        start_time = datetime.now(timezone.utc)
+        logger.info(f"[MEETING_PROCESS] Starting transcript processing for {transcript_id}")
+        
         transcript = await TranscriptRepository.get_by_id(transcript_id)
         if not transcript:
-            logger.error("Transcript %s not found for processing.", transcript_id)
+            logger.error(f"[MEETING_PROCESS] Transcript {transcript_id} not found for processing.")
             return
 
         await TranscriptRepository.update(transcript, processing_status=TranscriptStatus.PROCESSING)
+        logger.info(f"[MEETING_PROCESS] Status set to PROCESSING for {transcript_id}")
 
         try:
+            nlp_start = datetime.now(timezone.utc)
+            logger.info(f"[MEETING_PROCESS] Starting NLP processing...")
             nlp_result = await self.nlp_svc.process(transcript.raw_text)
+            nlp_time = (datetime.now(timezone.utc) - nlp_start).total_seconds()
+            logger.info(f"[MEETING_PROCESS] NLP processing completed in {nlp_time:.2f}s")
+            logger.debug(f"[MEETING_PROCESS] NLP result keys: {list(nlp_result.keys())}")
+            
             # validate_nlp_output is already called inside nlp_svc.process()
+            persist_start = datetime.now(timezone.utc)
+            logger.info(f"[MEETING_PROCESS] Persisting NLP results...")
             await self._persist_nlp_result(transcript, nlp_result)
+            persist_time = (datetime.now(timezone.utc) - persist_start).total_seconds()
+            logger.info(f"[MEETING_PROCESS] Persistence completed in {persist_time:.2f}s")
+            
             await TranscriptRepository.update(
                 transcript,
                 processing_status=TranscriptStatus.COMPLETED,
                 processed_at=datetime.now(timezone.utc),
             )
+            total_time = (datetime.now(timezone.utc) - start_time).total_seconds()
+            logger.info(f"[MEETING_PROCESS] ✓ Processing complete for {transcript_id} - Total: {total_time:.2f}s")
         except Exception as exc:
-            logger.error("NLP processing failed for transcript %s: %s", transcript_id, exc, exc_info=True)
+            logger.error(f"[MEETING_PROCESS] ✗ NLP processing failed for transcript {transcript_id}: {exc}", exc_info=True)
             await TranscriptRepository.update(
                 transcript,
                 processing_status=TranscriptStatus.FAILED,
@@ -128,51 +145,113 @@ class MeetingService:
             )
 
     async def _persist_nlp_result(self, transcript: Transcript, nlp_result: dict) -> None:
+        logger.info(f"[MEETING_PERSIST] Starting to persist NLP results")
+        
         summary_data = nlp_result.get("summary", {})
         action_items = nlp_result.get("action_items", [])
+        summary_text = summary_data.get("summary_text")
+        if not summary_text:
+            if action_items:
+                titles = [item.get("title", "Untitled") for item in action_items[:3]]
+                summary_text = (
+                    f"Meeting produced {len(action_items)} action items. "
+                    f"Key actions: {', '.join(titles)}."
+                )
+            else:
+                summary_text = "Meeting processed successfully. No action items were extracted."
+        
+        logger.info(f"[MEETING_PERSIST] Summary data keys: {list(summary_data.keys()) if summary_data else 'empty'}")
+        logger.info(f"[MEETING_PERSIST] Action items count: {len(action_items)}")
+        logger.debug(f"[MEETING_PERSIST] Summary text length: {len(summary_text or '')}")
+        logger.debug(f"[MEETING_PERSIST] Key points: {len(summary_data.get('key_points', []))}, Decisions: {len(summary_data.get('decisions', []))}")
 
         # Upsert embedded summary in Meeting document
         meeting = await MeetingRepository.get_by_id(str(transcript.meeting_id))
         if meeting:
-            await MeetingSummaryRepository.upsert(
-                meeting,
-                summary_text=summary_data.get("summary_text"),
-                key_points=summary_data.get("key_points", []),
-                decisions=summary_data.get("decisions", []),
-                raw_nlp_output=nlp_result,
+            logger.info(f"[MEETING_PERSIST] Upserting summary for meeting {meeting.id}")
+            try:
+                await MeetingSummaryRepository.upsert(
+                    meeting,
+                    summary_text=summary_text,
+                    key_points=summary_data.get("key_points", []),
+                    decisions=summary_data.get("decisions", []),
+                    raw_nlp_output=nlp_result,
+                )
+                logger.info(f"[MEETING_PERSIST] ✓ Summary upserted successfully")
+            except Exception as e:
+                logger.error(f"[MEETING_PERSIST] ✗ Failed to upsert summary: {e}", exc_info=True)
+                raise
+        else:
+            logger.warning(f"[MEETING_PERSIST] Meeting {transcript.meeting_id} not found")
+
+        # Update transcript with action items
+        logger.info(f"[MEETING_PERSIST] Updating transcript with summary and {len(action_items)} action items")
+        try:
+            await TranscriptRepository.update(
+                transcript,
+                summary_text=summary_text,
+                action_items=action_items,
             )
+            logger.info(f"[MEETING_PERSIST] ✓ Transcript updated with action items")
+        except Exception as e:
+            logger.error(f"[MEETING_PERSIST] ✗ Failed to update transcript: {e}", exc_info=True)
+            raise
 
         # Wipe out any previous PENDING suggestions for this transcript to prevent dupes
-        await TaskSuggestion.find(
+        logger.info(f"[MEETING_PERSIST] Cleaning up previous PENDING suggestions for transcript {transcript.id}")
+        delete_result = await TaskSuggestion.find(
             {"transcript_id": transcript.id, "review_status": SuggestionReviewStatus.PENDING}
         ).delete()
+        deleted_count = delete_result.deleted_count if hasattr(delete_result, 'deleted_count') else 0
+        logger.info(f"[MEETING_PERSIST] Deleted {deleted_count} previous suggestions")
 
         # Create task suggestions
-        for item in action_items:
-            # Parse deadline string to date object
-            parsed_deadline = self._parse_deadline(item.get("deadline"))
-            
-            # Resolve assignee
-            assignee_name = item.get("assignee")
-            resolved_assignee_id = await self._resolve_assignee(assignee_name)
-            
-            await TaskSuggestionRepository.create(
-                meeting_id=transcript.meeting_id,
-                transcript_id=transcript.id,
-                suggested_title=item.get("title", "Untitled task"),
-                suggested_description=item.get("description"),
-                suggested_assignee_name=assignee_name,
-                suggested_deadline=parsed_deadline,
-                speaker=item.get("speaker"),
-                transcript_quote=item.get("quote"),
-                transcript_timestamp=item.get("timestamp"),
-                review_status=SuggestionReviewStatus.PENDING,
-            )
+        logger.info(f"[MEETING_PERSIST] Creating {len(action_items)} task suggestions")
+        for idx, item in enumerate(action_items):
+            try:
+                # Parse deadline string to date object
+                parsed_deadline = self._parse_deadline(item.get("deadline"))
+                
+                # Resolve assignee
+                assignee_name = item.get("assignee")
+                logger.debug(f"[MEETING_PERSIST] [{idx+1}/{len(action_items)}] Resolving assignee: {assignee_name}")
+                
+                resolved_assignee_id = await self._resolve_assignee(assignee_name)
+                logger.debug(f"[MEETING_PERSIST] [{idx+1}/{len(action_items)}] Assignee resolved to: {resolved_assignee_id}")
+                
+                await TaskSuggestionRepository.create(
+                    meeting_id=transcript.meeting_id,
+                    transcript_id=transcript.id,
+                    suggested_title=item.get("title", "Untitled task"),
+                    suggested_description=item.get("description"),
+                    suggested_assignee_name=assignee_name,
+                    suggested_deadline=parsed_deadline,
+                    speaker=item.get("speaker"),
+                    transcript_quote=item.get("quote"),
+                    transcript_timestamp=item.get("timestamp"),
+                    review_status=SuggestionReviewStatus.PENDING,
+                )
+                logger.debug(f"[MEETING_PERSIST] [{idx+1}/{len(action_items)}] ✓ Suggestion created")
+            except Exception as e:
+                logger.error(f"[MEETING_PERSIST] ✗ Failed to create suggestion {idx+1}: {e}", exc_info=True)
+                # Continue processing other items even if one fails
+        
+        logger.info(f"[MEETING_PERSIST] ✓ All task suggestions processed")
 
     async def get_summary(self, meeting_id: str) -> MeetingSummary:
+        logger.info(f"[MEETING_GETSUMMARY] Fetching summary for meeting {meeting_id}")
         meeting = await MeetingRepository.get_by_id(meeting_id)
-        if not meeting or not meeting.summary:
+        if not meeting:
+            logger.warning(f"[MEETING_GETSUMMARY] Meeting {meeting_id} not found")
+            raise not_found("Meeting")
+        
+        if not meeting.summary:
+            logger.warning(f"[MEETING_GETSUMMARY] No summary found for meeting {meeting_id}")
+            logger.debug(f"[MEETING_GETSUMMARY] Meeting transcript processing status: {getattr(meeting, 'transcript_status', 'unknown')}")
             raise not_found("Meeting summary")
+        
+        logger.info(f"[MEETING_GETSUMMARY] ✓ Summary found for meeting {meeting_id}")
+        logger.debug(f"[MEETING_GETSUMMARY] Summary text length: {len(meeting.summary.summary_text or '')}, Key points: {len(meeting.summary.key_points or [])}")
         return meeting.summary
 
     async def get_transcript_status(self, meeting_id: str) -> Transcript:

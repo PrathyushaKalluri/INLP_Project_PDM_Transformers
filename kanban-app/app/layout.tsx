@@ -30,11 +30,15 @@ export default function RootLayout({
   `;
 
   return (
-    <html lang="en" className={`${inter.variable} antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: bootThemeScript }} />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         <Toaster />
       </body>

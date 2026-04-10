@@ -16,7 +16,7 @@ class JobStatus(str, enum.Enum):
 
 
 # Total pipeline steps for progress calculation
-JOB_TOTAL_STEPS = 5
+JOB_TOTAL_STEPS = 6
 
 
 class Job(Document):

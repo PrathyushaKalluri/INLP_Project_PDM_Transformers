@@ -6,6 +6,8 @@ import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { applyTaskFilters } from "@/lib/tasks";
+import { listProjects } from "@/lib/projects";
+import { listTasks } from "@/lib/tasks";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function KanbanPage() {
@@ -14,15 +16,58 @@ export default function KanbanPage() {
   const projects = useAppStore((state) => state.projects);
   const tasks = useAppStore((state) => state.tasks);
   const filters = useAppStore((state) => state.filters);
+  const setProjects = useAppStore((state) => state.setProjects);
+  const setTasks = useAppStore((state) => state.setTasks);
+  const setSelectedProject = useAppStore((state) => state.setSelectedProject);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch projects on mount
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 450);
-    return () => clearTimeout(timeout);
-  }, [selectedProject]);
+    const fetchProjects = async () => {
+      try {
+        setError(null);
+        const result = await listProjects();
+        setProjects(result.projects);
 
-  const currentProject = projects.find((project) => project.id === selectedProject);
+        // Auto-select first project if none selected
+        if (result.projects.length > 0 && !selectedProject) {
+          setSelectedProject(result.projects[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+        setError("Failed to load projects");
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  // Fetch tasks when selected project changes
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!selectedProject) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await listTasks({ projectId: selectedProject });
+        setTasks(result.tasks);
+      } catch (err) {
+        console.error("Failed to fetch tasks:", err);
+        setError("Failed to load tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [selectedProject, setTasks]);
+
+  const currentProject = projects.find(
+    (project) => project.id === selectedProject,
+  );
 
   const filteredTasks = useMemo(() => {
     if (!selectedProject) {
@@ -51,16 +96,23 @@ export default function KanbanPage() {
   }
 
   const todo = filteredTasks.filter((task) => task.status === "todo");
-  const inProgress = filteredTasks.filter((task) => task.status === "in-progress");
+  const inProgress = filteredTasks.filter(
+    (task) => task.status === "in-progress",
+  );
   const completed = filteredTasks.filter((task) => task.status === "completed");
 
   const hasNoTasks = !loading && filteredTasks.length === 0;
+
+  // Show error state
+  if (error) {
+    return <EmptyState title="Error loading tasks" description={error} />;
+  }
 
   return (
     <div className="space-y-4">
       <SectionHeading
         title="Kanban Board"
-        subtitle={currentProject.description}
+        subtitle={currentProject?.description ?? ""}
       />
 
       {hasNoTasks ? (

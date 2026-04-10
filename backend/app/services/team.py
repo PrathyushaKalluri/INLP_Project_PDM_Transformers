@@ -2,7 +2,7 @@ from beanie import PydanticObjectId
 
 from app.models.user import Team, TeamRole, Workspace, WorkspaceMember, WorkspaceRole
 from app.repositories.user import TeamRepository, UserRepository, WorkspaceRepository
-from app.schemas.team import TeamCreate, TeamMemberAdd, TeamUpdate, WorkspaceCreate
+from app.schemas.team import TeamCreate, TeamMemberAdd, TeamUpdate, WorkspaceCreate, TeamMemberUpdate
 from app.services.errors import bad_request, conflict, forbidden, not_found
 
 
@@ -85,6 +85,25 @@ class TeamService:
         if not member:
             raise not_found("Team member")
         await TeamRepository.remove_member(team, target_oid)
+
+    async def update_member_role(
+        self, team_id: str, user_id: str, data: TeamMemberUpdate, requester_id: PydanticObjectId
+    ) -> None:
+        team = await self._get_or_404(team_id)
+        self._require_owner(team, requester_id)
+        target_oid = PydanticObjectId(user_id)
+        member = TeamRepository.get_member(team, target_oid)
+        if not member:
+            raise not_found("Team member")
+        
+        # Update the role
+        member.role = data.role
+        await TeamRepository.update(team)
+
+    async def delete(self, team_id: str, requester_id: PydanticObjectId) -> None:
+        team = await self._get_or_404(team_id)
+        self._require_owner(team, requester_id)
+        await TeamRepository.delete(team)
 
     async def list_for_workspace_with_owners(
         self,

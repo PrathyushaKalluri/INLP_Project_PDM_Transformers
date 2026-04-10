@@ -60,22 +60,16 @@ class FrontendStartProcessingRequest(BaseModel):
     project_id: str = Field(alias="projectId")
 
 
-class FrontendPublishActionItem(BaseModel):
-    title: str
-    description: str | None = None
-    assignee_ids: list[str] = Field(default_factory=list, alias="assigneeIds")
-    owner_id: str | None = Field(default=None, alias="ownerId")
-    deadline: date | None = None
-    quote: str | None = None
-    speaker: str | None = None
-    timestamp: str | None = None
-
-
 class FrontendPublishRequest(BaseModel):
+    """
+    Simple publish contract: frontend only needs to provide:
+    - projectId: which project to publish to
+    - transcriptId: which transcript to get action items from
+    
+    Backend fetches action items from transcript (already extracted during NLP processing)
+    """
     project_id: str = Field(alias="projectId")
-    transcript_id: str | None = Field(default=None, alias="transcriptId")
-    summary: str | None = None
-    action_items: list[FrontendPublishActionItem] = Field(default_factory=list, alias="actionItems")
+    transcript_id: str = Field(alias="transcriptId")
 
 
 class NotificationsReadRequest(BaseModel):

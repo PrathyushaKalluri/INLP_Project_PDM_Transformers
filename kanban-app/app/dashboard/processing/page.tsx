@@ -1,19 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { ProcessingView } from "@/components/transcript/processing-view";
 import { useAppStore } from "@/store/useAppStore";
 import { PROCESSING_STEPS } from "@/types";
+import { getTranscriptStatusApi } from "@/lib/tasks";
 
 export default function ProcessingPage() {
   const router = useRouter();
   const processingState = useAppStore((state) => state.processingState);
+  const pendingTranscript = useAppStore((state) => state.pendingTranscript);
   const advanceProcessing = useAppStore((state) => state.advanceProcessing);
   const completeProcessing = useAppStore((state) => state.completeProcessing);
   const cancelProcessing = useAppStore((state) => state.cancelProcessing);
+  const hasCompletedRef = useRef(false);
+  const transcriptId = pendingTranscript?.transcriptId;
 
   useEffect(() => {
     if (!processingState.isProcessing) {
@@ -25,28 +29,49 @@ export default function ProcessingPage() {
       return;
     }
 
-    const interval = setInterval(() => {
-      const latest = useAppStore.getState().processingState;
-      if (!latest.isProcessing) {
-        clearInterval(interval);
-        return;
-      }
+    // Wait until store has transcript id from upload completion.
+    if (!transcriptId) {
+      return;
+    }
 
-      if (latest.currentStep >= PROCESSING_STEPS.length - 1) {
-        useAppStore.getState().completeProcessing();
-        return;
-      }
+    const pollStatus = async () => {
+      try {
+        const status = await getTranscriptStatusApi(transcriptId);
 
-      useAppStore.getState().advanceProcessing();
-    }, 1200);
+        if (status.processingStatus === "COMPLETED") {
+          if (hasCompletedRef.current) {
+            return;
+          }
+          hasCompletedRef.current = true;
+          await completeProcessing();
+          router.replace("/dashboard/publish");
+        } else if (status.processingStatus === "FAILED") {
+          console.error(
+            "[Processing] Transcript processing failed:",
+            status.errorMessage,
+          );
+          router.replace("/dashboard/processing/cancelled");
+        } else if (processingState.currentStep < PROCESSING_STEPS.length - 2) {
+          // Keep visual progress moving while backend remains in PENDING/PROCESSING.
+          advanceProcessing();
+        }
+      } catch (error) {
+        console.error("[Processing] Failed to check transcript status:", error);
+      }
+    };
+
+    pollStatus();
+    const interval = setInterval(pollStatus, 2000);
 
     return () => clearInterval(interval);
   }, [
     processingState.isProcessing,
     processingState.cancelled,
+    processingState.currentStep,
+    transcriptId,
     router,
-    advanceProcessing,
     completeProcessing,
+    advanceProcessing,
   ]);
 
   return (

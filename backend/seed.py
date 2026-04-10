@@ -156,18 +156,21 @@ async def seed() -> None:
     print("  Creating projects ...")
     proj_api = Project(
         team_id=backend_team.id,
+        owner_id=alice.id,
         name="REST API Redesign",
         description="Overhaul the public REST API for v2.",
         created_by=alice.id,
     )
     proj_db = Project(
         team_id=backend_team.id,
+        owner_id=alice.id,
         name="Database Optimization",
         description="Query tuning, indexes, and monitoring for the task board DB.",
         created_by=alice.id,
     )
     proj_mobile = Project(
         team_id=mobile_team.id,
+        owner_id=carol.id,
         name="Mobile App MVP",
         description="First public release of the Acme mobile app.",
         created_by=carol.id,

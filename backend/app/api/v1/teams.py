@@ -4,7 +4,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.schemas.team import (
     TeamCreate, TeamMemberAdd, TeamMemberDetailResponse, TeamMemberResponse,
-    TeamResponse, TeamUpdate, TeamWithOwnerResponse,
+    TeamResponse, TeamUpdate, TeamWithOwnerResponse, TeamMemberUpdate,
     WorkspaceCreate, WorkspaceResponse,
 )
 from app.services.team import TeamService, WorkspaceService
@@ -29,6 +29,29 @@ async def list_my_workspaces(
 ):
     svc = WorkspaceService()
     return await svc.list_for_user(current_user.id)
+
+
+@router.get("/workspaces/default", response_model=WorkspaceResponse)
+async def get_or_create_default_workspace(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get or create a default workspace for the current user.
+    This ensures users always have at least one workspace to work with.
+    """
+    svc = WorkspaceService()
+    
+    # Try to get user's first workspace
+    workspaces = await svc.list_for_user(current_user.id)
+    if workspaces:
+        return workspaces[0]
+    
+    # If no workspace exists, create one for the user
+    default_workspace_data = WorkspaceCreate(
+        name=f"{current_user.full_name}'s Workspace",
+        slug=f"{current_user.full_name.lower().replace(' ', '-')}-workspace"
+    )
+    return await svc.create(default_workspace_data, current_user.id)
 
 
 @router.get("/workspaces/{workspace_id}", response_model=WorkspaceResponse)
@@ -100,6 +123,16 @@ async def update_team(
     return await svc.update(team_id, data, current_user.id)
 
 
+@router.delete("/teams/{team_id}", status_code=204)
+async def delete_team(
+    team_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a team. Only team owners can delete teams."""
+    svc = TeamService()
+    await svc.delete(team_id, current_user.id)
+
+
 @router.get("/teams/{team_id}/members", response_model=list[TeamMemberDetailResponse])
 async def list_team_members(
     team_id: str,
@@ -128,3 +161,15 @@ async def remove_team_member(
 ):
     svc = TeamService()
     await svc.remove_member(team_id, user_id, current_user.id)
+
+
+@router.patch("/teams/{team_id}/members/{user_id}", status_code=204)
+async def update_team_member_role(
+    team_id: str,
+    user_id: str,
+    data: TeamMemberUpdate,
+    current_user: User = Depends(get_current_user),
+):
+    """Update a team member's role. Only team owners can update roles."""
+    svc = TeamService()
+    await svc.update_member_role(team_id, user_id, data, current_user.id)

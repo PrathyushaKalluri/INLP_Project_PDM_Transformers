@@ -20,7 +20,7 @@ from app.core.realtime import realtime_hub
 from app.models.meeting import Transcript, TranscriptStatus
 from app.models.notification import NotificationType
 from app.models.processing import Job, JobStatus, JOB_TOTAL_STEPS
-from app.models.task import SuggestionReviewStatus, TaskSuggestion
+from app.models.task import SuggestionReviewStatus, TaskSuggestion, Task, TaskEvidence, TaskStatusHistory, TaskStatus, TaskPriority
 from app.repositories.meeting import MeetingRepository, MeetingSummaryRepository, TranscriptRepository
 from app.repositories.task import TaskSuggestionRepository
 from app.repositories.user import UserRepository
@@ -28,6 +28,7 @@ from app.services.errors import bad_request, not_found
 from app.services.nlp import NLPService
 from app.services.notification import NotificationService
 from app.services.project import ProjectService
+from app.services.task import TaskService
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class ProcessingService:
         self.project_svc = ProjectService()
         self.nlp_svc = NLPService()
         self.notification_svc = NotificationService()
+        self.task_svc = TaskService()
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -53,7 +55,15 @@ class ProcessingService:
             raise not_found("Transcript")
 
         await self._enforce_queue_limits(requester_id)
-        await self._enforce_idempotency(transcript.id)
+        
+        # Phase Y: Idempotent Processing — Return existing job if active
+        existing_active = await self._check_active_job(transcript.id)
+        if existing_active:
+            logger.info(
+                "Idempotent job start: Returning existing active job %s for transcript %s",
+                existing_active.id, transcript.id
+            )
+            return existing_active
 
         job = Job(
             transcript_id=transcript.id,
@@ -128,18 +138,34 @@ class ProcessingService:
             if await self._cancelled(job):
                 return
 
-            # Step 2: NLP execution (with timeout)
+            # Step 2: NLP execution (with timeout & comprehensive error handling)
             await self._set_job_state(job, JobStatus.RUNNING, 2, "Analyzing transcript...")
             try:
-                result = await self.nlp_svc.process(transcript.raw_text)
+                result = await self.nlp_svc.process(
+                    transcript.raw_text,
+                    project_id=str(job.project_id)
+                )
             except asyncio.TimeoutError:
+                logger.error("Job %s: NLP pipeline timed out", job_id)
                 await self._timeout_job(job, transcript, "NLP pipeline timed out.")
                 return
             except ValueError as ve:
-                # Schema validation failure
-                await self._fail_job(
-                    job, f"NLP output schema invalid: {ve}", transcript=transcript
-                )
+                # Schema validation failure — indicates malformed NLP output
+                error_msg = f"NLP output schema invalid: {ve}"
+                logger.error("Job %s: %s", job_id, error_msg)
+                await self._fail_job(job, error_msg, transcript=transcript)
+                return
+            except RuntimeError as re:
+                # Pipeline service error (fails after retries)
+                error_msg = f"NLP pipeline error: {re}"
+                logger.error("Job %s: %s", job_id, error_msg)
+                await self._fail_job(job, error_msg, transcript=transcript)
+                return
+            except Exception as e:
+                # Catch-all for unexpected NLP errors
+                error_msg = f"Unexpected NLP error: {type(e).__name__}: {e}"
+                logger.error("Job %s: %s", job_id, error_msg, exc_info=True)
+                await self._fail_job(job, error_msg, transcript=transcript)
                 return
 
             if await self._cancelled(job):
@@ -147,19 +173,32 @@ class ProcessingService:
 
             # Step 3: Persist results
             await self._set_job_state(job, JobStatus.RUNNING, 3, "Saving summary...")
-            action_item_ids = await self._persist_nlp_result(transcript, result)
+            try:
+                action_item_ids = await self._persist_nlp_result(transcript, result)
+            except Exception as e:
+                error_msg = f"Failed to persist NLP result: {e}"
+                logger.error("Job %s: %s", job_id, error_msg, exc_info=True)
+                await self._fail_job(job, error_msg, transcript=transcript)
+                return
+            
             if await self._cancelled(job):
                 return
 
             # Step 4: Finalise
             await self._set_job_state(job, JobStatus.RUNNING, 4, "Finalizing...")
-            await self._set_transcript_status(transcript, TranscriptStatus.COMPLETED)
+            try:
+                await self._set_transcript_status(transcript, TranscriptStatus.COMPLETED)
+            except Exception as e:
+                logger.warning("Job %s: Failed to update transcript status: %s", job_id, e)
+                # Don't fail the job for this — it's not critical
 
             # Step 5: Complete
             summary_text = (result.get("summary") or {}).get("summary_text")
             job.summary = summary_text
-            job.action_item_ids = action_item_ids
             await self._set_job_state(job, JobStatus.COMPLETED, 5, "Completed")
+
+            # Emit completion event (Phase Z: Real-time Event Sync)
+            await self._emit_completion_event(job, transcript)
 
             # Notify project members
             await self.notification_svc.create_for_project(
@@ -169,6 +208,7 @@ class ProcessingService:
             )
 
         except asyncio.TimeoutError:
+            logger.error("Job %s: Unexpected timeout in _run_job", job_id)
             await self._timeout_job(job, transcript, "NLP pipeline timed out.")
         except Exception as exc:
             logger.error("Job %s failed: %s", job_id, exc, exc_info=True)
@@ -181,6 +221,19 @@ class ProcessingService:
     ) -> list[PydanticObjectId]:
         summary_data = nlp_result.get("summary", {})
         action_items = nlp_result.get("action_items", [])
+
+        # Phase X: Result Persistence — Store summary and action_items in Transcript
+        transcript.summary_text = summary_data.get("summary_text")
+        transcript.action_items = action_items
+        await TranscriptRepository.update(
+            transcript,
+            summary_text=transcript.summary_text,
+            action_items=transcript.action_items,
+        )
+        logger.info(
+            "Transcript %s: Persisted %d action items and summary",
+            transcript.id, len(action_items)
+        )
 
         # Persist meeting summary
         meeting = await MeetingRepository.get_by_id(str(transcript.meeting_id))
@@ -200,7 +253,21 @@ class ProcessingService:
 
         # Create task suggestions
         suggestion_ids: list[PydanticObjectId] = []
+        seen_titles: set[str] = set()  # Phase VII: Deduplication
+        
         for item in action_items:
+            # Phase VII: Deduplication — Skip if we've already created a suggestion with identical title
+            title = item.get("title", "").strip()
+            if not title:
+                logger.warning("Skipping action item with empty title")
+                continue
+            
+            title_lower = title.lower()
+            if title_lower in seen_titles:
+                logger.info("Deduplication: Skipping duplicate title '%s'", title)
+                continue
+            seen_titles.add(title_lower)
+            
             # ── Data normalisation: parse deadline string ──────────
             parsed_deadline = self._parse_deadline(item.get("deadline"))
 
@@ -211,7 +278,7 @@ class ProcessingService:
             suggestion = await TaskSuggestionRepository.create(
                 meeting_id=transcript.meeting_id,
                 transcript_id=transcript.id,
-                suggested_title=item.get("title", "Untitled task"),
+                suggested_title=title,
                 suggested_description=item.get("description"),
                 suggested_assignee_name=assignee_name,
                 suggested_deadline=parsed_deadline,
@@ -221,7 +288,14 @@ class ProcessingService:
                 review_status=SuggestionReviewStatus.PENDING,
             )
             suggestion_ids.append(suggestion.id)
+        
+        logger.info(
+            "Created %d deduplicated task suggestions from %d NLP action items",
+            len(suggestion_ids), len(action_items)
+        )
         return suggestion_ids
+
+    # ── Phase IV: Publish Flow Completion ──────────────────────────────────
 
     # ── Deadline parsing ──────────────────────────────────────────────────
 
@@ -335,26 +409,85 @@ class ProcessingService:
     # ── WebSocket event broadcasting ──────────────────────────────────────
 
     async def _emit_update(self, job: Job) -> None:
-        project = await self.project_svc.get_or_404(str(job.project_id))
-        member_ids: set[str] = {str(project.owner_id), str(project.created_by)}
-        member_ids.update(str(member.user_id) for member in project.members)
+        """Emit processing_updated event to project members (Phase Z)."""
+        try:
+            project = await self.project_svc.get_or_404(str(job.project_id))
+            member_ids: set[str] = {str(project.owner_id), str(project.created_by)}
+            member_ids.update(str(member.user_id) for member in project.members)
 
-        # Calculate progress percentage
-        progress = int((job.current_step / JOB_TOTAL_STEPS) * 100) if JOB_TOTAL_STEPS else 0
+            # Calculate progress percentage
+            progress = int((job.current_step / JOB_TOTAL_STEPS) * 100) if JOB_TOTAL_STEPS else 0
 
-        await realtime_hub.emit_to_users(
-            list(member_ids),
-            "processing_updated",
-            {
-                "jobId": str(job.id),
-                "status": job.status.value,
-                "currentStep": job.current_step,
-                "stepLabel": job.step_label,
-                "summary": job.summary,
-                "actionItemIds": [str(i) for i in job.action_item_ids],
-                "progress": progress,
-            },
-        )
+            await realtime_hub.emit_to_users(
+                list(member_ids),
+                "processing_updated",
+                {
+                    "jobId": str(job.id),
+                    "status": job.status.value,
+                    "currentStep": job.current_step,
+                    "stepLabel": job.step_label,
+                    "summary": job.summary,
+                    "actionItemIds": [str(i) for i in job.action_item_ids],
+                    "progress": progress,
+                },
+            )
+        except Exception as e:
+            logger.warning("Failed to emit processing_updated event: %s", e)
+
+    async def _emit_completion_event(self, job: Job, transcript: Transcript) -> None:
+        """
+        Phase Z: Real-time Event Sync
+        Emit processing_completed event after successful job completion.
+        """
+        try:
+            project = await self.project_svc.get_or_404(str(job.project_id))
+            member_ids: set[str] = {str(project.owner_id), str(project.created_by)}
+            member_ids.update(str(member.user_id) for member in project.members)
+
+            # Emit completion event with summary data
+            await realtime_hub.emit_to_users(
+                list(member_ids),
+                "processing_completed",
+                {
+                    "jobId": str(job.id),
+                    "transcriptId": str(transcript.id),
+                    "summary": job.summary,
+                    "actionItemIds": [str(i) for i in job.action_item_ids],
+                    "actionItemCount": len(job.action_item_ids),
+                    "completedAt": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            logger.info("Emitted processing_completed event for job %s", job.id)
+        except Exception as e:
+            logger.warning("Failed to emit processing_completed event: %s", e)
+
+    async def _emit_task_created_events(self, task_ids: list[PydanticObjectId], project_id: PydanticObjectId) -> None:
+        """
+        Phase Z: Real-time Event Sync
+        Emit task_created event for each newly created task.
+        """
+        if not task_ids:
+            return
+        
+        try:
+            project = await self.project_svc.get_or_404(str(project_id))
+            member_ids: set[str] = {str(project.owner_id), str(project.created_by)}
+            member_ids.update(str(member.user_id) for member in project.members)
+
+            # Emit one event per task
+            for task_id in task_ids:
+                await realtime_hub.emit_to_users(
+                    list(member_ids),
+                    "task_created",
+                    {
+                        "taskId": str(task_id),
+                        "projectId": str(project_id),
+                        "createdAt": datetime.now(timezone.utc).isoformat(),
+                    },
+                )
+            logger.info("Emitted %d task_created events", len(task_ids))
+        except Exception as e:
+            logger.warning("Failed to emit task_created events: %s", e)
 
     # ── Cancellation check ────────────────────────────────────────────────
 
@@ -403,6 +536,19 @@ class ProcessingService:
         if active_count >= max_active:
             from app.services.errors import conflict
             raise conflict(f"Rate limit: You already have {active_count} active processing jobs. Please wait.")
+
+    async def _check_active_job(self, transcript_id: PydanticObjectId) -> Job | None:
+        """
+        Phase Y: Idempotent Processing
+        Check for active job on transcript and return it if exists.
+        
+        Returns:
+            Job if active job exists, None otherwise
+        """
+        active = await Job.find_one(
+            {"transcript_id": transcript_id, "status": {"$in": [JobStatus.PENDING, JobStatus.RUNNING]}}
+        )
+        return active
 
     async def _enforce_idempotency(self, transcript_id: PydanticObjectId) -> None:
         """Prevent identical duplicate pipelines from running concurrently."""

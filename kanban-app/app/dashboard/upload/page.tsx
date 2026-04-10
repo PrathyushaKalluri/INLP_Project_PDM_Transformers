@@ -9,7 +9,13 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -25,17 +31,22 @@ export default function UploadPage() {
 
   const canSubmit = useMemo(
     () => Boolean(selectedProject) && transcript.trim().length > 20,
-    [selectedProject, transcript]
+    [selectedProject, transcript],
   );
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedProject || !canSubmit) {
       return;
     }
 
-    resetProcessing();
-    startProcessing(selectedProject, transcript.trim());
-    router.push("/dashboard/processing");
+    try {
+      resetProcessing();
+      await startProcessing(selectedProject, transcript.trim());
+      router.push("/dashboard/processing");
+    } catch (error) {
+      console.error("Failed to start processing:", error);
+      // Handle error - could show a toast notification
+    }
   };
 
   return (
@@ -45,7 +56,10 @@ export default function UploadPage() {
         subtitle="Paste meeting notes or transcript text to extract action items."
         action={
           <div className="min-w-60">
-            <Select value={selectedProject ?? undefined} onValueChange={setSelectedProject}>
+            <Select
+              value={selectedProject ?? undefined}
+              onValueChange={setSelectedProject}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select project" />
               </SelectTrigger>
@@ -63,7 +77,9 @@ export default function UploadPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-medium">Meeting Transcript</CardTitle>
+          <CardTitle className="text-xl font-medium">
+            Meeting Transcript
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
@@ -78,7 +94,10 @@ export default function UploadPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button variant="ghost" onClick={() => router.push("/dashboard/kanban")}> 
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/dashboard/kanban")}
+            >
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>

@@ -176,3 +176,24 @@ backend_database_presentation.tex
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# User-requested ignores
+*.md
+test_*.py
+*_test.py
+tests/
+
+# Local utility/debug scripts (not required for app runtime)
+check_*.py
+list_transcripts.py
+seed_demo.py
+verify_system.py
+backend/validate_integration.py
+
+# Local runtime artifacts
+backend/uploads/
+STATUS_BOARD.txt
+
+# OS-specific helper scripts
+# *.bat
+# *.ps1

@@ -6,7 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 # Enabled features
-USE_TRANSFORMER_CLASSIFIER = True
+USE_TRANSFORMER_CLASSIFIER = False  # Disabled due to memory constraints
 USE_RULE_BASED_DETECTION = True
 
 # Model names

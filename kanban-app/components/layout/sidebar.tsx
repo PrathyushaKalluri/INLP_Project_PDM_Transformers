@@ -11,6 +11,7 @@ import {
   Plus,
   Settings,
   Upload,
+  Users,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,9 +29,14 @@ import { useAppStore } from "@/store/useAppStore";
 interface SidebarProps {
   onAddProject: () => void;
   onEditProject: (projectId: string) => void;
+  onCreateTeam: () => void;
 }
 
-export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
+export function Sidebar({
+  onAddProject,
+  onEditProject,
+  onCreateTeam,
+}: SidebarProps) {
   const user = useAppStore((state) => state.user);
   const projects = useAppStore((state) => state.projects);
   const selectedProject = useAppStore((state) => state.selectedProject);
@@ -75,8 +81,32 @@ export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
           <AvatarFallback>{user?.avatar ?? "NA"}</AvatarFallback>
         </Avatar>
         <div>
-          <p className="text-sm font-medium text-text-primary">{user?.name ?? "Guest"}</p>
-          <p className="text-xs text-text-secondary">{user?.role ?? "visitor"}</p>
+          <p className="text-sm font-medium text-text-primary">
+            {user?.name ?? "Guest"}
+          </p>
+          <p className="text-xs text-text-secondary">
+            {user?.role ?? "visitor"}
+          </p>
+        </div>
+      </div>
+
+      <Separator className="my-4" />
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-text-primary">Teams</h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCreateTeam}
+            title="Create team"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
+          Teams management available from project creation menu
         </div>
       </div>
 
@@ -127,12 +157,18 @@ export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
                     {isManager ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEditProject(project.id)}>
+                          <DropdownMenuItem
+                            onClick={() => onEditProject(project.id)}
+                          >
                             Edit project
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -149,6 +185,18 @@ export function Sidebar({ onAddProject, onEditProject }: SidebarProps) {
       <Separator className="my-4" />
 
       <div className="space-y-1">
+        <Link
+          href="/dashboard/teams"
+          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+            pathname === "/dashboard/teams"
+              ? "bg-primary/20 text-text-primary"
+              : "text-text-secondary hover:bg-muted"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          Teams Management
+        </Link>
+
         <Link
           href="/dashboard/publish"
           className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${

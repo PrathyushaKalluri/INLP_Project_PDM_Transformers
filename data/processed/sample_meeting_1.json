@@ -1,18 +1,5 @@
 [
   {
-    "sentence_id": 1,
-    "speaker": "Alice",
-    "text": "Good morning everyone.",
-    "root_verb": null,
-    "object": null,
-    "subject": "Alice",
-    "turn_id": 1,
-    "triplet_confidence": 0.9,
-    "triplet_flags": [
-      "null_object"
-    ]
-  },
-  {
     "sentence_id": 2,
     "speaker": "Alice",
     "text": "Let's start with the sprint planning for this week.",
@@ -123,6 +110,20 @@
     "turn_id": 8,
     "triplet_confidence": 1.0,
     "triplet_flags": []
+  },
+  {
+    "sentence_id": 14,
+    "speaker": "Alice",
+    "text": "Sounds good.",
+    "root_verb": "sound",
+    "object": "the pipeline issue",
+    "subject": "Alice",
+    "turn_id": 9,
+    "object_resolved": true,
+    "triplet_confidence": 0.8,
+    "triplet_flags": [
+      "resolved_via_context"
+    ]
   },
   {
     "sentence_id": 15,

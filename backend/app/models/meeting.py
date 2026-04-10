@@ -51,6 +51,12 @@ class Transcript(Document):
     error_message: str | None = None
     uploaded_by: PydanticObjectId
     processed_at: datetime | None = None
+    
+    # Phase X: Result Persistence — Store NLP output
+    summary_text: str | None = None
+    action_items: list[dict] = []  # [{"title": str, "description": str, "assignee": str|None, "deadline": str|None}]
+    action_item_ids: list[PydanticObjectId] = []  # Task IDs created from this transcript (Phase IV: Publish completion)
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

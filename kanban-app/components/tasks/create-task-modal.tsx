@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Loader2, Plus } from "lucide-react";
+import { Calendar, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,22 +19,25 @@ import { useAppStore } from "@/store/useAppStore";
 import { createTaskApi } from "@/lib/tasks";
 import type { TaskStatus } from "@/types";
 
-interface AddTaskModalProps {
+interface CreateTaskModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   projectId: string;
   status: TaskStatus;
-  triggerLabel?: string;
+  onTaskCreated?: () => void;
 }
 
-export function AddTaskModal({
+export function CreateTaskModal({
+  open,
+  onOpenChange,
   projectId,
   status,
-  triggerLabel = "+ Add Task",
-}: AddTaskModalProps) {
+  onTaskCreated,
+}: CreateTaskModalProps) {
   const user = useAppStore((state) => state.user);
   const addTask = useAppStore((state) => state.addTask);
   const addNotification = useAppStore((state) => state.addNotification);
 
-  const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -51,14 +53,7 @@ export function AddTaskModal({
     setError(null);
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      reset();
-    }
-  };
-
-  const onSubmit = async () => {
+  const save = async () => {
     if (!canSave || !user) {
       return;
     }
@@ -84,8 +79,9 @@ export function AddTaskModal({
         type: "success",
       });
 
-      handleOpenChange(false);
+      onOpenChange(false);
       reset();
+      onTaskCreated?.();
     } catch (err) {
       const errorMsg =
         err instanceof Error ? err.message : "Failed to create task";
@@ -100,18 +96,20 @@ export function AddTaskModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="secondary" size="sm" className="gap-1">
-          <Plus className="h-4 w-4" />
-          {triggerLabel}
-        </Button>
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) {
+          reset();
+        }
+      }}
+    >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add task</DialogTitle>
+          <DialogTitle>Create new task</DialogTitle>
           <DialogDescription>
-            Create a new task in{" "}
+            Add a task to{" "}
             {status === "todo"
               ? "To-Do"
               : status === "in-progress"
@@ -126,7 +124,7 @@ export function AddTaskModal({
             <Label htmlFor="task-title">Title *</Label>
             <Input
               id="task-title"
-              placeholder="Define the task"
+              placeholder="Task title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={loading}
@@ -139,7 +137,7 @@ export function AddTaskModal({
             <Label htmlFor="task-description">Description</Label>
             <Textarea
               id="task-description"
-              placeholder="Describe expected outcome"
+              placeholder="Add details about this task..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={loading}
@@ -172,14 +170,14 @@ export function AddTaskModal({
         <DialogFooter>
           <Button
             variant="ghost"
-            onClick={() => handleOpenChange(false)}
+            onClick={() => onOpenChange(false)}
             disabled={loading}
           >
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={!canSave || loading}>
+          <Button disabled={!canSave || loading} onClick={save}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? "Creating..." : "Save task"}
+            {loading ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>

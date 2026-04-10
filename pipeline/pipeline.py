@@ -1,12 +1,10 @@
 """Main NLP action extraction pipeline."""
 
 from typing import List, Dict
-from pathlib import Path
 
 from .config import (
     USE_TRANSFORMER_CLASSIFIER,
     USE_RULE_BASED_DETECTION,
-    OUTPUT_DATA_DIR,
 )
 
 from .preprocessing import parse_speakers, split_sentences, clean_sentences, filter_stopwords, resolve_triplets, flag_sentence_types
@@ -33,7 +31,6 @@ class NLPActionExtractor:
         self.deadline_extractor = DeadlineExtractor()
         self.meeting_type = "mixed"  # Will be set during pipeline run
         self.known_speakers: set = set()  # Will be populated during preprocessing
-        print("[+] Pipeline initialized")
     
     def run_pipeline(self, transcript: str) -> List[Dict]:
         """
@@ -59,66 +56,34 @@ class NLPActionExtractor:
                      }
                  ]
         """
-        print("\n" + "="*60)
-        print("  NLP ACTION EXTRACTION PIPELINE")
-        print("="*60)
-        
         # ── STEP 1: PREPROCESSING ────────────────────────────────────────
-        print("\n[1/4] PREPROCESSING")
-        print("-" * 60)
-        
         speaker_utterances = parse_speakers(transcript)
-        print(f"    * Parsed {len(speaker_utterances)} speaker utterances")
         
         # Extract unique speakers for assignee extraction
         self.known_speakers = set(s.get("speaker", "") for s in speaker_utterances if s.get("speaker"))
         self.assignee_extractor.set_known_speakers(self.known_speakers)
-        print(f"    * Known speakers: {', '.join(sorted(self.known_speakers))}")
         
         sentences = split_sentences(speaker_utterances)
-        print(f"    * Split into {len(sentences)} sentences")
-        
         sentences = clean_sentences(sentences)
-        print(f"    * Cleaned sentences (removed empty)")
-        
         sentences = filter_stopwords(sentences)
-        total_filtered = len(speaker_utterances) + len(split_sentences(speaker_utterances)) - len(sentences)
-        print(f"    * Filtered {total_filtered} stopword sentences")
-        
         sentences = resolve_triplets(sentences)
-        print(f"    * Resolved triplets and scored confidence")
         
-        # NEW: Flag sentence types (observation, consequence, metric, general)
+        # Flag sentence types (observation, consequence, metric, general)
         sentences = flag_sentence_types(sentences)
-        print(f"    * Flagged sentence types")
         
-        # NEW: Detect meeting type (task_oriented, status_review, mixed)
+        # Detect meeting type (task_oriented, status_review, mixed)
         from .detection.enhanced_features import detect_meeting_type
         meeting_type = detect_meeting_type(sentences)
-        print(f"    * Meeting type: {meeting_type}")
-        
-        # Store meeting type for downstream steps
         self.meeting_type = meeting_type
         
         # ── STEP 2: DETECTION ────────────────────────────────────────────
-        print("\n[2/4] DECISION DETECTION")
-        print("-" * 60)
-        
         detected = self.detector.detect_batch(sentences, meeting_type=self.meeting_type)
         decision_sentences = [s for s in detected if s.get("is_decision")]
-        print(f"    * Detected {len(decision_sentences)} decision sentences")
-        if decision_sentences:
-            avg_conf = sum(s.get('confidence', 0) for s in decision_sentences) / len(decision_sentences)
-            print(f"    * Confidence scores: avg={avg_conf:.2f}")
         
         if not decision_sentences:
-            print("    [!] No decisions detected in transcript")
             return []
         
         # ── STEP 3: EXTRACTION ───────────────────────────────────────────
-        print("\n[3/4] METADATA EXTRACTION")
-        print("-" * 60)
-        
         task_definitions = []
         for sent in decision_sentences:
             text = sent.get("text", "")
@@ -145,50 +110,74 @@ class NLPActionExtractor:
                 }
             })
         
-        print(f"    * Generated {len(task_definitions)} task definitions")
-        print(f"    * With assignees: {sum(1 for t in task_definitions if t.get('assignee'))}")
-        print(f"    * With deadlines: {sum(1 for t in task_definitions if t.get('deadline'))}")
-        
         # ── STEP 4: POSTPROCESSING ───────────────────────────────────────
-        print("\n[4/4] POSTPROCESSING")
-        print("-" * 60)
-        
         # Build tasks (includes description generation)
         tasks = TaskBuilder.build_batch(task_definitions)
-        print(f"    * Built {len(tasks)} task objects")
         
         # Score confidence
         tasks = ConfidenceScorer.score_batch(tasks)
         
-        # NEW: Add manual review flags for borderline confidence
+        # Add manual review flags for borderline confidence
         tasks = TaskValidator.add_manual_review_flags(tasks)
         
-        # NEW: Filter invalid tasks (metrics, reactions, etc.)
-        before_validation = len(tasks)
+        # Filter invalid tasks (metrics, reactions, etc.)
         tasks = TaskValidator.filter_batch(tasks, meeting_type=self.meeting_type)
-        print(f"    * Validated tasks: {before_validation} → {len(tasks)} (removed {before_validation - len(tasks)})")
         
         # Deduplicate
         tasks = Deduplicator.deduplicate(tasks)
-        print(f"    * After deduplication: {len(tasks)} unique tasks")
-        
-        # ── SUMMARY ──────────────────────────────────────────────────────
-        print("\n" + "="*60)
-        print(f"  SUMMARY: Extracted {len(tasks)} action items")
-        print("="*60 + "\n")
         
         return tasks
 
 
-def run_pipeline(transcript: str) -> List[Dict]:
+def run_pipeline(transcript: str) -> dict:
     """
     Single function entry point for pipeline.
+    
+    FIXED CONTRACT (Phase X: Result Persistence):
+    Returns a dict with guaranteed structure:
+    {
+      "summary": {
+        "summary_text": str | None
+      },
+      "action_items": [
+        {
+          "title": str,
+          "description": str,
+          "assignee": str | None,
+          "deadline": str | None
+        }
+      ]
+    }
     
     Args:
         transcript (str): Raw meeting transcript
     
     Returns:
-        list: Structured task objects
+        dict: Contract-compliant dict with summary and action_items
+        
+    Guarantees:
+        - Never returns None (always returns dict)
+        - Always has "summary" and "action_items" keys
+        - action_items is always a list (may be empty)
+        - All action items have required fields
     """
     extractor = NLPActionExtractor()
-    return extractor.run_pipeline(transcript)
+    tasks = extractor.run_pipeline(transcript)
+    
+    # Map tasks to action_items contract
+    action_items = []
+    for task in tasks:
+        action_items.append({
+            "title": task.get("task", ""),
+            "description": task.get("task", ""),
+            "assignee": task.get("assignee"),
+            "deadline": task.get("deadline"),
+        })
+    
+    # Return in contract format
+    return {
+        "summary": {
+            "summary_text": None  # Will be populated from meeting summary later
+        },
+        "action_items": action_items
+    }

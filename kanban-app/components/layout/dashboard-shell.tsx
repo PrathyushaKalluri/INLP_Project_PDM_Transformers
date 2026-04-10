@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import { ProjectModal } from "@/components/layout/project-modal";
+import { TeamModal } from "@/components/layout/team-modal";
 import { NotificationToasts } from "@/components/layout/notification-toasts";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -13,6 +14,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
 
   const openAddProject = () => {
@@ -25,10 +27,22 @@ export function DashboardShell({ children }: DashboardShellProps) {
     setProjectModalOpen(true);
   };
 
+  const openCreateTeam = () => {
+    setTeamModalOpen(true);
+  };
+
+  const handleTeamCreated = useCallback(async () => {
+    setTeamModalOpen(false);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="grid min-h-[calc(100vh-2rem)] items-start gap-4 md:min-h-[calc(100vh-3rem)] md:grid-cols-[18rem_minmax(0,1fr)] md:gap-5">
-        <Sidebar onAddProject={openAddProject} onEditProject={openEditProject} />
+        <Sidebar
+          onAddProject={openAddProject}
+          onEditProject={openEditProject}
+          onCreateTeam={openCreateTeam}
+        />
 
         <div className="flex min-h-full flex-col gap-4">
           <Topbar />
@@ -40,6 +54,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
         open={projectModalOpen}
         onOpenChange={setProjectModalOpen}
         projectId={editingProjectId}
+      />
+      <TeamModal
+        open={teamModalOpen}
+        onOpenChange={setTeamModalOpen}
+        onTeamCreated={handleTeamCreated}
       />
       <NotificationToasts />
     </div>

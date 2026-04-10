@@ -51,6 +51,10 @@ class TeamMemberAdd(BaseModel):
     role: TeamRole = TeamRole.MEMBER
 
 
+class TeamMemberUpdate(BaseModel):
+    role: TeamRole
+
+
 class TeamMemberResponse(BaseModel):
     model_config = {"from_attributes": True}
 

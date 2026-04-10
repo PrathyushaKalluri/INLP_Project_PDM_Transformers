@@ -166,6 +166,7 @@ class TaskService:
             team_id=meeting.team_id,
             meeting_id=suggestion.meeting_id,
             task_suggestion_id=suggestion.id,
+            transcript_reference=suggestion.transcript_id,
             title=data.title or suggestion.suggested_title,
             description=data.description or suggestion.suggested_description,
             status=data.status,

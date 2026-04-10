@@ -100,6 +100,7 @@ class Task(Document):
     team_id: PydanticObjectId
     meeting_id: PydanticObjectId | None = None
     task_suggestion_id: PydanticObjectId | None = None
+    transcript_reference: PydanticObjectId | None = None
     title: str
     description: str | None = None
     status: TaskStatus = TaskStatus.BACKLOG

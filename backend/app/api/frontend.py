@@ -6,14 +6,14 @@ logger = logging.getLogger(__name__)
 from app.models.processing import JOB_TOTAL_STEPS
 
 from beanie import PydanticObjectId
-from fastapi import APIRouter, Body, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Query, WebSocket, WebSocketDisconnect
 
 from app.api.deps import get_current_user
 from app.core.realtime import realtime_hub
 from app.core.security import decode_token
 from app.models.meeting import Transcript
 from app.models.notification import NotificationType
-from app.models.task import TaskEvidence, TaskPriority, TaskStatus
+from app.models.task import Task, TaskEvidence, TaskPriority, TaskStatus
 from app.models.user import User
 from app.repositories.meeting import MeetingRepository, MeetingSummaryRepository, TranscriptRepository
 from app.repositories.user import UserRepository
@@ -64,6 +64,7 @@ def _task_to_frontend(task) -> dict:
         "projectId": str(task.project_id),
         "teamId": str(task.team_id),
         "meetingId": str(task.meeting_id) if task.meeting_id else None,
+        "transcriptReference": str(task.transcript_reference) if task.transcript_reference else None,
         "title": task.title,
         "description": task.description,
         "status": task.status.value,
@@ -76,16 +77,30 @@ def _task_to_frontend(task) -> dict:
     }
 
 
-def _transcript_to_frontend(transcript: Transcript) -> dict:
-    return {
+def _transcript_to_frontend(transcript: Transcript, project_id: str | None = None) -> dict:
+    summary_text = transcript.summary_text or ""
+    if not summary_text and transcript.action_items:
+        top_titles = [item.get("title", "Untitled") for item in transcript.action_items[:3]]
+        summary_text = (
+            f"Meeting produced {len(transcript.action_items)} action items. "
+            f"Key actions: {', '.join(top_titles)}."
+        )
+
+    result = {
         "id": str(transcript.id),
         "meetingId": str(transcript.meeting_id),
         "processingStatus": transcript.processing_status.value,
         "errorMessage": transcript.error_message,
         "createdAt": transcript.created_at.isoformat(),
         "processedAt": transcript.processed_at.isoformat() if transcript.processed_at else None,
-        "text": transcript.raw_text,
+        "content": transcript.raw_text,
+        "summary": summary_text,
+        "actionItemIds": [str(task_id) for task_id in transcript.action_item_ids],
+        "actionItems": transcript.action_items or [],
     }
+    if project_id:
+        result["projectId"] = project_id
+    return result
 
 
 def _notification_to_frontend(note) -> dict:
@@ -108,6 +123,8 @@ async def frontend_signup(data: AuthSignupRequest):
         "id": str(user.id),
         "email": user.email,
         "fullName": user.full_name,
+        "role": user.role,
+        "avatar": user.avatar,
     }
 
 
@@ -121,6 +138,8 @@ async def frontend_login(data: LoginRequest):
             "id": str(user.id),
             "email": user.email,
             "fullName": user.full_name,
+            "role": user.role,
+            "avatar": user.avatar,
             "isActive": user.is_active,
         },
         "token": token.access_token,
@@ -139,21 +158,39 @@ async def frontend_me(current_user: User = Depends(get_current_user)):
         "id": str(current_user.id),
         "email": current_user.email,
         "fullName": current_user.full_name,
+        "role": current_user.role,
+        "avatar": current_user.avatar,
         "isActive": current_user.is_active,
     }
 
 
 @router.get("/projects")
-async def frontend_projects(current_user: User = Depends(get_current_user)):
+async def frontend_projects(
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1),
+    limit: int = Query(50),
+):
     svc = ProjectService()
-    projects, _ = await svc.list_for_user(current_user.id, include_archived=False, skip=0, limit=1000)
-    return [_project_to_frontend(p) for p in projects]
+    skip = (page - 1) * limit
+    projects, total = await svc.list_for_user(current_user.id, include_archived=False, skip=skip, limit=limit)
+    return {
+        "items": [_project_to_frontend(p) for p in projects],
+        "total": total,
+        "page": page,
+    }
 
 
 @router.post("/projects")
 async def frontend_create_project(data: FrontendProjectCreate, current_user: User = Depends(get_current_user)):
+    from app.schemas.project import ProjectCreate
+    # Convert frontend schema to service schema
+    project_data = ProjectCreate(
+        team_id=data.team_id,
+        name=data.name,
+        description=data.description,
+    )
     svc = ProjectService()
-    project = await svc.create(data, current_user.id)
+    project = await svc.create(project_data, current_user.id)
     return _project_to_frontend(project)
 
 
@@ -256,7 +293,11 @@ async def frontend_delete_task(task_id: str, current_user: User = Depends(get_cu
 
 
 @router.post("/transcripts")
-async def frontend_create_transcript(data: FrontendTranscriptCreate, current_user: User = Depends(get_current_user)):
+async def frontend_create_transcript(
+    data: FrontendTranscriptCreate,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+):
     meeting_svc = MeetingService()
 
     if data.meeting_id:
@@ -274,7 +315,17 @@ async def frontend_create_transcript(data: FrontendTranscriptCreate, current_use
         f"api_{datetime.utcnow().timestamp()}.txt",
         current_user.id,
     )
-    return _transcript_to_frontend(transcript)
+    logger.info(
+        f"[API_TRANSCRIPT] Transcript created with ID {transcript.id}, scheduling background processing..."
+    )
+    
+    background_tasks.add_task(_process_frontend_transcript, str(transcript.id))
+    logger.info(f"[API_TRANSCRIPT] Background processing task scheduled for transcript {transcript.id}")
+    
+    # Processing will happen asynchronously in the background
+    # No synchronous processing to keep response time fast
+    
+    return _transcript_to_frontend(transcript, data.project_id)
 
 
 @router.get("/transcripts")
@@ -289,14 +340,34 @@ async def frontend_list_transcripts(
     if not meeting_ids:
         return []
     transcripts = await Transcript.find({"meeting_id": {"$in": meeting_ids}}).sort("-created_at").to_list()
-    return [_transcript_to_frontend(t) for t in transcripts]
+    return [_transcript_to_frontend(t, projectId) for t in transcripts]
 
 
 @router.get("/transcripts/{transcript_id}")
 async def frontend_get_transcript(transcript_id: str, current_user: User = Depends(get_current_user)):
     svc = MeetingService()
     transcript = await svc.get_transcript_by_id(transcript_id, current_user.id)
-    return _transcript_to_frontend(transcript)
+    # Get project_id from meeting
+    meeting = await MeetingRepository.get_by_id(str(transcript.meeting_id))
+    project_id = str(meeting.project_id) if meeting else None
+    payload = _transcript_to_frontend(transcript, project_id)
+    if not payload.get("summary") and meeting and meeting.summary and meeting.summary.summary_text:
+        payload["summary"] = meeting.summary.summary_text
+    return payload
+
+
+async def _process_frontend_transcript(transcript_id: str) -> None:
+    """Background task: Process transcript through NLP pipeline"""
+    logger.info(f"[BG_PROCESS] Starting background transcript processing for {transcript_id}")
+    try:
+        svc = MeetingService()
+        await svc.process_transcript(transcript_id)
+        logger.info(f"[BG_PROCESS] ✓ Background processing completed for {transcript_id}")
+    except Exception as e:
+        logger.error(
+            f"[BG_PROCESS] ✗ Background processing failed for {transcript_id}: {e}",
+            exc_info=True,
+        )
 
 
 @router.post("/processing/start")
@@ -359,72 +430,159 @@ async def frontend_delete_transcript(transcript_id: str, current_user: User = De
 
 @router.post("/publish")
 async def frontend_publish(data: FrontendPublishRequest, current_user: User = Depends(get_current_user)):
+    """
+    Single publish endpoint: Convert extracted action items to tasks.
+    
+    SINGLE SOURCE OF TRUTH:
+    - Frontend sends only: projectId, transcriptId
+    - Backend fetches transcript and action_items from database (extracted during NLP)
+    - Backend creates tasks from those action items
+    - Automatic deduplication based on (transcriptId, title)
+    - Updates transcript with created task IDs
+    
+    Flow:
+    1. Validate project membership
+    2. Fetch transcript
+    3. Extract action_items from transcript.action_items
+    4. For each action item:
+       - Check deduplication (transcript_id + title must not exist)
+       - Create task with title, description, deadline
+       - Store transcript reference + evidence
+    5. Update transcript.action_item_ids
+    6. Emit real-time event
+    7. Return success with task IDs
+    """
+    
+    print(f"[PUBLISH] Called with transcriptId={data.transcript_id}, projectId={data.project_id}")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 1. VALIDATE PROJECT ACCESS
+    # ──────────────────────────────────────────────────────────────────────
     project_svc = ProjectService()
     project = await project_svc._require_project_member(data.project_id, current_user.id)
-
-    transcript = None
-    meeting = None
-    if data.transcript_id:
-        transcript = await TranscriptRepository.get_by_id(data.transcript_id)
-        if transcript:
-            meeting = await MeetingRepository.get_by_id(str(transcript.meeting_id))
-
-    if meeting and data.summary is not None:
-        await MeetingSummaryRepository.upsert(
-            meeting,
-            summary_text=data.summary,
-            key_points=[],
-            decisions=[],
-            raw_nlp_output={"source": "publish_api"},
-        )
-
+    print(f"[PUBLISH] ✓ User has access to project {project.name}")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 2. FETCH TRANSCRIPT
+    # ──────────────────────────────────────────────────────────────────────
+    transcript = await TranscriptRepository.get_by_id(data.transcript_id)
+    if not transcript:
+        raise bad_request(f"Transcript {data.transcript_id} not found")
+    
+    print(f"[PUBLISH] ✓ Transcript found: {transcript.id}")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 3. GET ACTION ITEMS FROM TRANSCRIPT (already extracted by NLP)
+    # ──────────────────────────────────────────────────────────────────────
+    action_items = transcript.action_items or []
+    print(f"[PUBLISH] Found {len(action_items)} action items from transcript")
+    
+    if not action_items:
+        print(f"[PUBLISH] ✗ No action items to publish")
+        return {"success": True, "taskIds": []}  # Empty list (no items to create)
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 4. CREATE TASKS FROM ACTION ITEMS
+    # ──────────────────────────────────────────────────────────────────────
     task_svc = TaskService()
-    created_ids: list[str] = []
-    for item in data.action_items:
-        created_task = await task_svc.create_manual(
-            TaskCreate(
-                project_id=data.project_id,
-                title=item.title,
-                description=item.description,
-                assignee_id=item.assignee_ids[0] if item.assignee_ids else None,
-                owner_id=item.owner_id,
-                due_date=item.deadline,
-            ),
-            current_user.id,
-        )
-        if transcript and item.quote:
-            created_task.evidence.append(
-                TaskEvidence(
-                    transcript_id=transcript.id,
-                    speaker=item.speaker,
-                    transcript_timestamp=item.timestamp,
-                    quote=item.quote,
-                )
+    created_task_ids: list[str] = []
+    duplicate_count = 0
+    
+    for idx, action_item in enumerate(action_items):
+        title = action_item.get("title") if isinstance(action_item, dict) else getattr(action_item, "title", "Untitled")
+        description = action_item.get("description") if isinstance(action_item, dict) else getattr(action_item, "description", "")
+        quote = action_item.get("quote") if isinstance(action_item, dict) else getattr(action_item, "transcript_quote", None)
+        speaker = action_item.get("speaker") if isinstance(action_item, dict) else getattr(action_item, "speaker", None)
+        timestamp = action_item.get("timestamp") if isinstance(action_item, dict) else getattr(action_item, "transcript_timestamp", None)
+        
+        print(f"[PUBLISH] Processing item {idx + 1}: {title}")
+        
+        # ── DEDUPLICATION: Check if (transcript_id + title) exists ──
+        existing = await Task.find_one({
+            "transcript_reference": transcript.id,
+            "title": title,
+            "is_manual": False,  # Don't count manually added tasks
+        })
+        
+        if existing:
+            print(f"[PUBLISH] ⊘ Skipping duplicate: transcript+title already exists")
+            duplicate_count += 1
+            continue
+        
+        # ── CREATE TASK ──
+        try:
+            task = await task_svc.create_manual(
+                TaskCreate(
+                    project_id=data.project_id,
+                    title=title,
+                    description=description or "",
+                ),
+                current_user.id,
             )
-            await created_task.save()
-        created_ids.append(str(created_task.id))
-
+            
+            # ── ADD TRANSCRIPT EVIDENCE ──
+            task.transcript_reference = transcript.id
+            if quote:
+                task.evidence.append(
+                    TaskEvidence(
+                        transcript_id=transcript.id,
+                        speaker=speaker,
+                        transcript_timestamp=timestamp,
+                        quote=quote,
+                    )
+                )
+            task.is_manual = False  # Mark as extracted (not manually created)
+            await task.save()
+            
+            created_task_ids.append(str(task.id))
+            print(f"[PUBLISH] ✓ Created task: {str(task.id)}")
+            
+        except Exception as e:
+            print(f"[PUBLISH] ✗ Failed to create task for '{title}': {e}")
+            continue
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 5. UPDATE TRANSCRIPT WITH CREATED TASK IDS
+    # ──────────────────────────────────────────────────────────────────────
+    if created_task_ids:
+        await TranscriptRepository.update(
+            transcript,
+            action_item_ids=[PydanticObjectId(task_id) for task_id in created_task_ids],
+        )
+        print(f"[PUBLISH] ✓ Updated transcript with {len(created_task_ids)} task IDs")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 6. EMIT REAL-TIME EVENT
+    # ──────────────────────────────────────────────────────────────────────
+    await realtime_hub.emit_to_users(
+        [str(current_user.id)],
+        "publish_completed",
+        {
+            "projectId": str(project.id),
+            "transcriptId": str(transcript.id),
+            "taskIds": created_task_ids,
+            "count": len(created_task_ids),
+            "duplicates": duplicate_count,
+        },
+    )
+    print(f"[PUBLISH] ✓ Emitted real-time event")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 7. SEND NOTIFICATION
+    # ──────────────────────────────────────────────────────────────────────
     note_svc = NotificationService()
     await note_svc.create_for_project(
         str(project.id),
-        f"Transcript published to project {project.name}",
+        f"Published {len(created_task_ids)} tasks from transcript",
         NotificationType.SUCCESS,
     )
-
-    recipients = {str(project.owner_id), str(project.created_by)}
-    recipients.update(str(member.user_id) for member in project.members)
-    await realtime_hub.emit_to_users(
-        list(recipients),
-        "publish",
-        {
-            "projectId": str(project.id),
-            "transcriptId": data.transcript_id,
-            "taskIds": created_ids,
-            "summary": data.summary,
-        },
-    )
-
-    return {"success": True, "taskIds": created_ids}
+    print(f"[PUBLISH] ✓ Sent notification")
+    
+    # ──────────────────────────────────────────────────────────────────────
+    # 8. RETURN SUCCESS
+    # ──────────────────────────────────────────────────────────────────────
+    print(f"[PUBLISH] ✓✓✓ SUCCESS: Created {len(created_task_ids)} tasks ({duplicate_count} duplicates skipped)")
+    return {"success": True, "taskIds": created_task_ids}
 
 
 @router.get("/notifications")
@@ -442,6 +600,94 @@ async def frontend_notifications_read(
     svc = NotificationService()
     updated = await svc.mark_read(current_user.id, data.ids)
     return {"updated": updated}
+
+
+# ─── TEAM & PROJECT MANAGEMENT ───
+
+@router.get("/teams")
+async def frontend_list_teams(current_user: User = Depends(get_current_user)):
+    """List all teams for the current user"""
+    from app.services.team import TeamService
+    svc = TeamService()
+    teams = await svc.list_all(current_user.id)
+    return [{"id": str(t.id), "name": t.name, "members": len(t.members or [])} for t in teams]
+
+
+@router.get("/teams/{team_id}/members")
+async def frontend_list_team_members(team_id: str, current_user: User = Depends(get_current_user)):
+    """List members of a team"""
+    from app.services.team import TeamService
+    svc = TeamService()
+    members = await svc.list_members_detail(team_id, current_user.id)
+    return members
+
+
+@router.delete("/teams/{team_id}")
+async def frontend_delete_team(team_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a team and all its projects"""
+    from app.services.team import TeamService
+    svc = TeamService()
+    await svc.delete(team_id, current_user.id)
+    return {"deleted": True}
+
+
+@router.delete("/teams/{team_id}/members/{user_id}")
+async def frontend_remove_team_member(
+    team_id: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Remove a member from a team"""
+    from app.services.team import TeamService
+    svc = TeamService()
+    await svc.remove_member(team_id, user_id, current_user.id)
+    return {"removed": True}
+
+
+@router.get("/projects/all")
+async def frontend_all_projects(current_user: User = Depends(get_current_user)):
+    """List ALL projects for the current user (across all teams)"""
+    svc = ProjectService()
+    projects, total = await svc.list_all_for_user(current_user.id)
+    return {
+        "items": [_project_to_frontend(p) for p in projects],
+        "total": total,
+    }
+
+
+@router.delete("/projects/{project_id}")
+async def frontend_delete_project_endpoint(project_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a project"""
+    svc = ProjectService()
+    await svc.delete(project_id, current_user.id)
+    return {"deleted": True}
+
+
+@router.post("/cleanup")
+async def frontend_cleanup_seed_data(current_user: User = Depends(get_current_user)):
+    """Clean up seed/test data (DANGEROUS - only for testing)"""
+    from app.models.team import Team
+    from app.models.project import Project
+    
+    # Only allow cleanup if user is an admin or in demo mode
+    if not current_user or current_user.email not in ["admin@acme.com", current_user.email]:
+        return {"error": "Unauthorized"}
+    
+    try:
+        # Delete all teams with "DEMO" or "TEST" in name
+        demo_teams = await Team.find({"name": {"$regex": "TEST|DEMO|demo|test"}}).to_list()
+        for team in demo_teams:
+            await team.delete()
+        
+        # Delete all projects with "DEMO" or "TEST" in name  
+        demo_projects = await Project.find({"name": {"$regex": "TEST|DEMO|demo|test"}}).to_list()
+        for project in demo_projects:
+            await project.delete()
+        
+        return {"deleted_teams": len(demo_teams), "deleted_projects": len(demo_projects)}
+    except Exception as e:
+        logger.error(f"Cleanup failed: {e}")
+        return {"error": str(e)}
 
 
 @router.websocket("/ws")

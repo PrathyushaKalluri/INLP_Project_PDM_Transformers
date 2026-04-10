@@ -52,6 +52,12 @@ export interface Transcript {
   summary: string;
   createdAt: string;
   actionItemIds: string[];
+  actionItems: {
+    title: string;
+    description?: string;
+    assignee?: string;
+    deadline?: string;
+  }[];
 }
 
 export interface ProcessingState {

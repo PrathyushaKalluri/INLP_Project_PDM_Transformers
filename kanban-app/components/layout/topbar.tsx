@@ -6,7 +6,13 @@ import { FilterPanel } from "@/components/tasks/filter-panel";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { NotificationsPanel } from "@/components/layout/notifications-panel";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -20,15 +26,20 @@ export function Topbar() {
   const hasProjects = projects.length > 0;
 
   const projectLabel = useMemo(
-    () => projects.find((project) => project.id === selectedProject)?.name ?? "Select project",
-    [projects, selectedProject]
+    () =>
+      projects.find((project) => project.id === selectedProject)?.name ??
+      "Select project",
+    [projects, selectedProject],
   );
 
   return (
     <header className="kbn-fade-up kbn-delay-1 flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border bg-card p-3 shadow-sm">
       <div className="min-w-56">
         {hasProjects ? (
-          <Select value={selectedProject ?? undefined} onValueChange={setSelectedProject}>
+          <Select
+            value={selectedProject ?? undefined}
+            onValueChange={setSelectedProject}
+          >
             <SelectTrigger>
               <SelectValue placeholder={projectLabel} />
             </SelectTrigger>
@@ -62,8 +73,14 @@ export function Topbar() {
 
       <NotificationsPanel />
 
-      <BrandLogo variant="full" className="hidden md:block h-8 w-auto px-2 py-1" />
-      <BrandLogo variant="icon" className="block md:hidden h-8 w-auto px-2 py-1" />
+      <BrandLogo
+        variant="full"
+        className="hidden md:block h-8 w-auto px-2 py-1"
+      />
+      <BrandLogo
+        variant="icon"
+        className="block md:hidden h-8 w-auto px-2 py-1"
+      />
     </header>
   );
 }

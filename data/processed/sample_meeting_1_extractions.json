@@ -1,11 +1,31 @@
 [
   {
+    "raw_text": "Let's start with the sprint planning for this week.",
+    "assignee": "team",
+    "deadline": null,
+    "confidence": 0.7292862176723804,
+    "evidence": {
+      "text": "Let's start with the sprint planning for this week.",
+      "speaker": "Alice"
+    }
+  },
+  {
     "raw_text": "I will handle the API refactor by Friday.",
     "assignee": "Bob",
     "deadline": "Friday",
-    "confidence": 1.0,
+    "confidence": 0.8899609427965531,
     "evidence": {
       "text": "I will handle the API refactor by Friday.",
+      "speaker": "Bob"
+    }
+  },
+  {
+    "raw_text": "The current endpoints are too slow.",
+    "assignee": "Bob",
+    "deadline": null,
+    "confidence": 0.6165324169750196,
+    "evidence": {
+      "text": "The current endpoints are too slow.",
       "speaker": "Bob"
     }
   },
@@ -13,7 +33,7 @@
     "raw_text": "Charlie, can you write the integration tests for the new endpoints?",
     "assignee": "Alice",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.7865544480714706,
     "evidence": {
       "text": "Charlie, can you write the integration tests for the new endpoints?",
       "speaker": "Alice"
@@ -23,7 +43,7 @@
     "raw_text": "Yes, I will write the tests by Wednesday.",
     "assignee": "Charlie",
     "deadline": "Wednesday",
-    "confidence": 1.0,
+    "confidence": 0.85,
     "evidence": {
       "text": "Yes, I will write the tests by Wednesday.",
       "speaker": "Charlie"
@@ -31,9 +51,9 @@
   },
   {
     "raw_text": "Diana, please update the project documentation with the new API specs.",
-    "assignee": "Diana",
+    "assignee": "Alice",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.5638590134336847,
     "evidence": {
       "text": "Diana, please update the project documentation with the new API specs.",
       "speaker": "Alice"
@@ -43,20 +63,40 @@
     "raw_text": "I'll update the docs by Thursday.",
     "assignee": "Diana",
     "deadline": "Thursday",
-    "confidence": 1.0,
+    "confidence": 0.85,
     "evidence": {
       "text": "I'll update the docs by Thursday.",
       "speaker": "Diana"
     }
   },
   {
+    "raw_text": "Let's also follow up on the deployment pipeline issue from last week.",
+    "assignee": "team",
+    "deadline": null,
+    "confidence": 0.5427698382732541,
+    "evidence": {
+      "text": "Let's also follow up on the deployment pipeline issue from last week.",
+      "speaker": "Alice"
+    }
+  },
+  {
     "raw_text": "I'll look into the CI/CD pipeline and fix the failing builds.",
     "assignee": "Bob",
     "deadline": null,
-    "confidence": 1.0,
+    "confidence": 0.85,
     "evidence": {
       "text": "I'll look into the CI/CD pipeline and fix the failing builds.",
       "speaker": "Bob"
+    }
+  },
+  {
+    "raw_text": "Let's meet again on Friday to review progress.",
+    "assignee": "team",
+    "deadline": "Friday",
+    "confidence": 0.5044873423839669,
+    "evidence": {
+      "text": "Let's meet again on Friday to review progress.",
+      "speaker": "Alice"
     }
   }
 ]

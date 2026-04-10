@@ -23,9 +23,9 @@ class Settings(BaseSettings):
 
     # NLP
     NLP_MODE: str = "local"
-    NLP_PIPELINE_PATH: str = "../meeting-action-extractor/src"
+    NLP_PIPELINE_PATH: str = "pipeline"  # Path to NLP pipeline directory
     NLP_SERVICE_BASE_URL: str = "http://localhost:8001"
-    NLP_SERVICE_TIMEOUT_SECONDS: int = 30
+    NLP_SERVICE_TIMEOUT_SECONDS: int = 300
     NLP_SERVICE_POLL_INTERVAL_SECONDS: int = 2
     NLP_SERVICE_MAX_POLL_SECONDS: int = 300
 

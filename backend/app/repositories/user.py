@@ -124,3 +124,7 @@ class TeamRepository:
     async def remove_member(team: Team, user_id: PydanticObjectId) -> None:
         team.members = [m for m in team.members if m.user_id != user_id]
         await team.save()
+
+    @staticmethod
+    async def delete(team: Team) -> None:
+        await team.delete()
