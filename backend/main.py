@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api import frontend_router, v1_router
+from app.core.config import settings
 from app.services.errors import AppError
 from app.core.logging import setup_logging
 
@@ -30,15 +31,15 @@ app = FastAPI(
 # ── CORS ───────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Tighten this in production
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ── Contract validation (dev mode only) ────────────────────────────────────────
-from app.core.config import settings as _settings
-if _settings.ENV.lower() == "development":
+if settings.ENV.lower() == "development":
     from app.core.validation import ContractValidationMiddleware
     app.add_middleware(ContractValidationMiddleware)
 

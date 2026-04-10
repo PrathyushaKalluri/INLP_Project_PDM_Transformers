@@ -7,6 +7,12 @@ class Settings(BaseSettings):
 
     ENV: str = "development"
 
+    # CORS
+    # Comma-separated list, e.g. "https://app.example.com,https://preview.example.com"
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    # Allow Vercel preview/prod domains by default; tighten if needed.
+    CORS_ORIGIN_REGEX: str = r"^https://.*\.vercel\.app$"
+
     # Database
     MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "meeting_tasks"
@@ -32,6 +38,10 @@ class Settings(BaseSettings):
     @property
     def max_upload_bytes(self) -> int:
         return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 
 settings = Settings()
