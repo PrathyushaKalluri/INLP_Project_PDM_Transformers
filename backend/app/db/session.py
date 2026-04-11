@@ -10,17 +10,27 @@ _client: AsyncIOMotorClient | None = None
 async def init_db() -> None:
     global _client
     try:
+        if not settings.MONGODB_URL:
+            raise RuntimeError(
+                "MONGODB_URL is not set. Add your MongoDB Atlas connection string in the Render environment variables."
+            )
+
+        if settings.MONGODB_URL.startswith("mongodb://localhost"):
+            raise RuntimeError(
+                "MONGODB_URL is still pointing to localhost. Replace it with your MongoDB Atlas URI on Render."
+            )
+
         # Create client with connection timeout
         _client = AsyncIOMotorClient(
             settings.MONGODB_URL,
-            serverSelectionTimeoutMS=5000,  # 5 second timeout
-            connectTimeoutMS=5000,
+            serverSelectionTimeoutMS=15000,
+            connectTimeoutMS=15000,
         )
         
         # Test connection with timeout
         await asyncio.wait_for(
             _client.server_info(),
-            timeout=5.0
+            timeout=15.0
         )
         
         from app.models import get_document_models
@@ -31,9 +41,8 @@ async def init_db() -> None:
         print("✓ MongoDB connected successfully")
     except asyncio.TimeoutError:
         raise RuntimeError(
-            "MongoDB connection timeout (5s). "
-            "Make sure MongoDB is running on localhost:27017. "
-            "Start with: mongosh or MongoDB Compass"
+            "MongoDB connection timeout. "
+            f"Check Atlas connectivity, allowlist, and MONGODB_URL={settings.MONGODB_URL!r}."
         )
     except Exception as e:
         raise RuntimeError(f"MongoDB connection failed: {e}")

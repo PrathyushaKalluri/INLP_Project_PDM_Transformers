@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     CORS_ORIGIN_REGEX: str = r"^https://.*\.vercel\.app$"
 
     # Database
-    MONGODB_URL: str = "mongodb://localhost:27017"
+    # Required in production. Leave empty locally only if you export it another way.
+    MONGODB_URL: str = ""
     MONGODB_DB_NAME: str = "meeting_tasks"
 
     # JWT
