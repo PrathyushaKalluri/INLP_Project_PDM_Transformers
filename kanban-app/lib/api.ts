@@ -5,7 +5,7 @@
  * - Authorization headers
  * - Token refresh on 401
  * - Support for both /api/v1 and /api/frontend prefixes
- * - Request timeouts (15 seconds default)
+ * - Request timeouts (adaptive by endpoint)
  */
 
 // Note: Base URL is just /api, not /api/v1
@@ -19,7 +19,19 @@ const API_BASE =
 const AUTH_FALLBACK_BASE =
   process.env.NEXT_PUBLIC_API_FALLBACK_BASE?.replace(/\/$/, "") ||
   "http://127.0.0.1:8010/api";
-const REQUEST_TIMEOUT = 15000; // 15 seconds
+const DEFAULT_REQUEST_TIMEOUT = 30000; // 30 seconds
+const AUTH_REQUEST_TIMEOUT = 60000; // 60 seconds for cold-start prone auth flows
+
+function getRequestTimeout(endpoint: string): number {
+  if (
+    endpoint === "/v1/auth/login" ||
+    endpoint === "/v1/auth/register" ||
+    endpoint === "/v1/auth/refresh"
+  ) {
+    return AUTH_REQUEST_TIMEOUT;
+  }
+  return DEFAULT_REQUEST_TIMEOUT;
+}
 
 export interface TokenPair {
   access_token: string;
@@ -84,10 +96,7 @@ async function refreshAccessToken(): Promise<TokenPair | null> {
     `${API_BASE}/frontend/auth/refresh`,
   ];
 
-  const payloads = [
-    { refresh_token: refreshToken },
-    { refreshToken },
-  ];
+  const payloads = [{ refresh_token: refreshToken }, { refreshToken }];
 
   try {
     for (const url of refreshEndpoints) {
@@ -159,6 +168,7 @@ export async function apiCall<T>(
   };
 
   const method = (options.method || "GET").toUpperCase();
+  const requestTimeout = getRequestTimeout(endpoint);
 
   console.debug(`[API_${requestId}] START ${method} ${endpoint}`);
 
@@ -173,7 +183,7 @@ export async function apiCall<T>(
 
   // Create AbortController for timeout
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+  const timeout = setTimeout(() => controller.abort(), requestTimeout);
 
   try {
     const fetchStart = performance.now();
@@ -278,9 +288,9 @@ export async function apiCall<T>(
       endpoint === "/v1/auth/login" || endpoint === "/v1/auth/refresh";
     const shouldTryFallback =
       isAuthEndpoint &&
-      (error instanceof Error &&
-        (error.message.includes("timeout") ||
-          error.message.includes("Failed to fetch"))) &&
+      error instanceof Error &&
+      (error.message.includes("timeout") ||
+        error.message.includes("Failed to fetch")) &&
       AUTH_FALLBACK_BASE !== API_BASE;
 
     if (shouldTryFallback) {
@@ -303,7 +313,7 @@ export async function apiCall<T>(
     const totalTime = performance.now() - startTime;
     if (error instanceof Error && error.name === "AbortError") {
       const timeoutError = new Error(
-        `Request timeout after ${REQUEST_TIMEOUT}ms: ${method} ${endpoint}`,
+        `Request timeout after ${requestTimeout}ms: ${method} ${endpoint}`,
       );
       console.error(`[API_${requestId}] TIMEOUT - ${totalTime.toFixed(2)}ms`);
       throw timeoutError;
