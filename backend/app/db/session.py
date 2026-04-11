@@ -1,6 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
-import asyncio
 
 from app.core.config import settings
 
@@ -20,17 +19,11 @@ async def init_db() -> None:
                 "MONGODB_URL is still pointing to localhost. Replace it with your MongoDB Atlas URI on Render."
             )
 
-        # Create client with connection timeout
+        # Create client with a short connection timeout so startup does not block for long.
         _client = AsyncIOMotorClient(
             settings.MONGODB_URL,
-            serverSelectionTimeoutMS=15000,
-            connectTimeoutMS=15000,
-        )
-        
-        # Test connection with timeout
-        await asyncio.wait_for(
-            _client.server_info(),
-            timeout=15.0
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
         )
         
         from app.models import get_document_models
@@ -39,11 +32,6 @@ async def init_db() -> None:
             document_models=get_document_models(),
         )
         print("✓ MongoDB connected successfully")
-    except asyncio.TimeoutError:
-        raise RuntimeError(
-            "MongoDB connection timeout. "
-            f"Check Atlas connectivity, allowlist, and MONGODB_URL={settings.MONGODB_URL!r}."
-        )
     except Exception as e:
         raise RuntimeError(f"MongoDB connection failed: {e}")
 

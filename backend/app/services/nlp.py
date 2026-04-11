@@ -314,7 +314,7 @@ class NLPService:
                         method, url, attempt + 1, retries + 1, exc,
                     )
                     if attempt < retries:
-                        await asyncio.sleep(1 * (attempt + 1))  # linear backoff
+                        await asyncio.sleep(0.5 * (attempt + 1))  # shorter linear backoff
                         continue
                 raise  # non-retryable error — propagate immediately
         raise last_exc  # type: ignore[misc]  # all retries exhausted

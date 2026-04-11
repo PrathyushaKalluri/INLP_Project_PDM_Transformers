@@ -125,4 +125,5 @@ class Task(Document):
             IndexModel([("team_id", ASCENDING)]),
             IndexModel([("assignee_id", ASCENDING)]),
             IndexModel([("meeting_id", ASCENDING)]),
+            IndexModel([("transcript_reference", ASCENDING), ("is_manual", ASCENDING)]),
         ]

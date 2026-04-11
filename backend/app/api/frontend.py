@@ -517,6 +517,12 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
     ).to_list()
     is_first_publish = len(existing_transcript_tasks) == 0
 
+    existing_transcript_tasks_by_title = {
+        (task.title or "").strip().lower(): task
+        for task in existing_transcript_tasks
+        if (task.title or "").strip()
+    }
+
     def _normalize_title(value: str | None) -> str:
         return (value or "").strip().lower()
 
@@ -562,17 +568,12 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
         if not title:
             print("[PUBLISH] ⊘ Skipping empty action item title")
             continue
+
+        normalized_title = title.lower()
         
         print(f"[PUBLISH] Processing item {idx + 1}: {title}")
         
-        matching_existing = next(
-            (
-                task
-                for task in existing_transcript_tasks
-                if _normalize_title(task.title) == _normalize_title(title)
-            ),
-            None,
-        )
+        matching_existing = existing_transcript_tasks_by_title.get(normalized_title)
 
         if not is_first_publish and matching_existing:
             existing_description = _normalize_text(matching_existing.description)
@@ -613,6 +614,7 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
 
                 created_task_ids.append(str(matching_existing.id))
                 print(f"[PUBLISH] ✓ Updated edited task: {str(matching_existing.id)}")
+                existing_transcript_tasks_by_title[normalized_title] = matching_existing
             except Exception as e:
                 print(f"[PUBLISH] ✗ Failed to update task for '{title}': {e}")
             continue
@@ -653,6 +655,7 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
             
             created_task_ids.append(str(task.id))
             existing_transcript_tasks.append(task)
+            existing_transcript_tasks_by_title[normalized_title] = task
             print(f"[PUBLISH] ✓ Created task: {str(task.id)}")
             
         except Exception as e:
@@ -784,7 +787,7 @@ async def frontend_delete_project_endpoint(project_id: str, current_user: User =
 @router.post("/cleanup")
 async def frontend_cleanup_seed_data(current_user: User = Depends(get_current_user)):
     """Clean up seed/test data (DANGEROUS - only for testing)"""
-    from app.models.team import Team
+    from app.models.user import Team
     from app.models.project import Project
     
     # Only allow cleanup if user is an admin or in demo mode

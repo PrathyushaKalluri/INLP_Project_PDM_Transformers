@@ -35,6 +35,9 @@ _INVALID_DEADLINE_PATTERNS = [
     re.compile(r"^\s*the\s+task\s+week\s*$", re.I),
 ]
 
+_COMPILED_DEADLINE_PATTERNS = [re.compile(pattern, re.I) for pattern in DEADLINE_PATTERNS]
+_SHARED_SPACY_NLP = None
+
 _VALID_DEADLINE_ANCHORS = re.compile(
     r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday"
     r"|january|february|march|april|may|june|july|august|september"
@@ -60,12 +63,16 @@ class DeadlineExtractor:
     
     def _ensure_loaded(self):
         """Lazy-load spaCy NER model."""
+        global _SHARED_SPACY_NLP
+
         if self._nlp is not None:
             return
         
         try:
             import spacy
-            self._nlp = spacy.load("en_core_web_sm")
+            if _SHARED_SPACY_NLP is None:
+                _SHARED_SPACY_NLP = spacy.load("en_core_web_sm")
+            self._nlp = _SHARED_SPACY_NLP
             self.use_spacy = True
             print(f"[+] spaCy NER model loaded")
         except Exception as e:
@@ -88,9 +95,7 @@ class DeadlineExtractor:
     
     def _regex_extract(self, text: str) -> Optional[str]:
         """Extract deadline using regex patterns."""
-        patterns = [re.compile(p, re.I) for p in DEADLINE_PATTERNS]
-        
-        for pattern in patterns:
+        for pattern in _COMPILED_DEADLINE_PATTERNS:
             match = pattern.search(text)
             if match:
                 deadline = match.group(0).strip()

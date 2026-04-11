@@ -250,6 +250,11 @@ def is_valid_task_title(title: str, root_verb: Optional[str] = None, obj: Option
 
 class TaskDescriptionGenerator:
     """Generate task descriptions from sentence text using FLAN-T5."""
+
+
+_SHARED_TASK_MODEL = None
+_SHARED_TASK_TOKENIZER = None
+_SHARED_TASK_DEVICE = None
     
     def __init__(self, model_name: str = MODEL_NAME):
         """Initialize task description generator."""
@@ -261,26 +266,33 @@ class TaskDescriptionGenerator:
     
     def _ensure_loaded(self):
         """Lazy-load FLAN-T5 model."""
+        global _SHARED_TASK_MODEL, _SHARED_TASK_TOKENIZER, _SHARED_TASK_DEVICE
+
         if self._model is not None:
             return
         
         try:
-            print(f"[*] Loading summarization model: {self.model_name}")
-            import torch
-            from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-            
-            torch.set_num_threads(1)
-            self._device = torch.device("cpu")
-            self._torch = torch
-            
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self._model = AutoModelForSeq2SeqLM.from_pretrained(
-                self.model_name,
-                dtype=torch.float32,
-                low_cpu_mem_usage=False,
-            )
-            self._model.to(self._device)
-            self._model.eval()
+            if _SHARED_TASK_MODEL is None or _SHARED_TASK_TOKENIZER is None or _SHARED_TASK_DEVICE is None:
+                print(f"[*] Loading summarization model: {self.model_name}")
+                import torch
+                from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+                torch.set_num_threads(1)
+                _SHARED_TASK_DEVICE = torch.device("cpu")
+                self._torch = torch
+
+                _SHARED_TASK_TOKENIZER = AutoTokenizer.from_pretrained(self.model_name)
+                _SHARED_TASK_MODEL = AutoModelForSeq2SeqLM.from_pretrained(
+                    self.model_name,
+                    dtype=torch.float32,
+                    low_cpu_mem_usage=False,
+                )
+                _SHARED_TASK_MODEL.to(_SHARED_TASK_DEVICE)
+                _SHARED_TASK_MODEL.eval()
+
+            self._tokenizer = _SHARED_TASK_TOKENIZER
+            self._model = _SHARED_TASK_MODEL
+            self._device = _SHARED_TASK_DEVICE
             print(f"[+] Summarization model loaded")
         except Exception as e:
             print(f"[!] Warning: Could not load summarization model: {e}")

@@ -24,6 +24,11 @@ LABEL_TO_TYPE = {
 
 KEEP_TYPES = {"decision", "commitment"}
 
+_SHARED_CLASSIFIER_MODEL = None
+_SHARED_CLASSIFIER_TOKENIZER = None
+_SHARED_CLASSIFIER_DEVICE = None
+_SHARED_CLASSIFIER_ENTAILMENT_IDX = None
+
 
 class TransformerClassifier:
     """
@@ -57,35 +62,49 @@ class TransformerClassifier:
     
     def _ensure_loaded(self):
         """Lazy-load model on first use."""
+        global _SHARED_CLASSIFIER_MODEL, _SHARED_CLASSIFIER_TOKENIZER
+        global _SHARED_CLASSIFIER_DEVICE, _SHARED_CLASSIFIER_ENTAILMENT_IDX
+
         if self._model is not None:
             return
         
         try:
-            print("[*] Loading zero-shot classification model...")
-            import torch
-            from transformers import AutoTokenizer, AutoModelForSequenceClassification
-            
-            torch.set_num_threads(1)
-            self._device = torch.device("cpu")
-            
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self._model = AutoModelForSequenceClassification.from_pretrained(
-                self.model_name,
-                dtype=torch.float32,
-                low_cpu_mem_usage=False,
-            )
-            self._model.to(self._device)
-            self._model.eval()
-            
-            # Detect entailment index
-            id2label = self._model.config.id2label
-            self._entailment_idx = None
-            for idx, label in id2label.items():
-                if label.lower() == "entailment":
-                    self._entailment_idx = int(idx)
-                    break
-            if self._entailment_idx is None:
-                self._entailment_idx = len(id2label) - 1
+            if (
+                _SHARED_CLASSIFIER_MODEL is None
+                or _SHARED_CLASSIFIER_TOKENIZER is None
+                or _SHARED_CLASSIFIER_DEVICE is None
+                or _SHARED_CLASSIFIER_ENTAILMENT_IDX is None
+            ):
+                print("[*] Loading zero-shot classification model...")
+                import torch
+                from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+                torch.set_num_threads(1)
+                _SHARED_CLASSIFIER_DEVICE = torch.device("cpu")
+
+                _SHARED_CLASSIFIER_TOKENIZER = AutoTokenizer.from_pretrained(self.model_name)
+                _SHARED_CLASSIFIER_MODEL = AutoModelForSequenceClassification.from_pretrained(
+                    self.model_name,
+                    dtype=torch.float32,
+                    low_cpu_mem_usage=False,
+                )
+                _SHARED_CLASSIFIER_MODEL.to(_SHARED_CLASSIFIER_DEVICE)
+                _SHARED_CLASSIFIER_MODEL.eval()
+
+                id2label = _SHARED_CLASSIFIER_MODEL.config.id2label
+                entailment_idx = None
+                for idx, label in id2label.items():
+                    if label.lower() == "entailment":
+                        entailment_idx = int(idx)
+                        break
+                if entailment_idx is None:
+                    entailment_idx = len(id2label) - 1
+                _SHARED_CLASSIFIER_ENTAILMENT_IDX = entailment_idx
+
+            self._tokenizer = _SHARED_CLASSIFIER_TOKENIZER
+            self._model = _SHARED_CLASSIFIER_MODEL
+            self._device = _SHARED_CLASSIFIER_DEVICE
+            self._entailment_idx = _SHARED_CLASSIFIER_ENTAILMENT_IDX
             
             print(f"[+] Classifier loaded: {self.model_name}")
         except Exception as e:

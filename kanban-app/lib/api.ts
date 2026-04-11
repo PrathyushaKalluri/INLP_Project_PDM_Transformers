@@ -19,8 +19,9 @@ const API_BASE =
 const AUTH_FALLBACK_BASE =
   process.env.NEXT_PUBLIC_API_FALLBACK_BASE?.replace(/\/$/, "") ||
   "http://127.0.0.1:8010/api";
-const DEFAULT_REQUEST_TIMEOUT = 30000; // 30 seconds
-const AUTH_REQUEST_TIMEOUT = 60000; // 60 seconds for cold-start prone auth flows
+const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds
+const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds for auth flows
+const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds for project CRUD
 
 function getRequestTimeout(endpoint: string): number {
   if (
@@ -30,6 +31,16 @@ function getRequestTimeout(endpoint: string): number {
   ) {
     return AUTH_REQUEST_TIMEOUT;
   }
+
+  if (
+    endpoint === "/frontend/projects" ||
+    endpoint.startsWith("/frontend/projects/") ||
+    endpoint === "/v1/projects" ||
+    endpoint.startsWith("/v1/projects/")
+  ) {
+    return PROJECT_REQUEST_TIMEOUT;
+  }
+
   return DEFAULT_REQUEST_TIMEOUT;
 }
 
@@ -185,6 +196,33 @@ export async function apiCall<T>(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeout);
 
+  const readJsonOrEmpty = async <R>(response: Response): Promise<R | undefined> => {
+    const contentLength = response.headers.get("content-length");
+    const contentType = response.headers.get("content-type") || "";
+
+    if (response.status === 204 || contentLength === "0") {
+      return undefined;
+    }
+
+    if (!contentType.includes("application/json")) {
+      const text = await response.text();
+      if (!text.trim()) {
+        return undefined;
+      }
+      try {
+        return JSON.parse(text) as R;
+      } catch {
+        return undefined;
+      }
+    }
+
+    const text = await response.text();
+    if (!text.trim()) {
+      return undefined;
+    }
+    return JSON.parse(text) as R;
+  };
+
   try {
     const fetchStart = performance.now();
     console.debug(`[API_${requestId}] Sending fetch request...`);
@@ -233,10 +271,14 @@ export async function apiCall<T>(
 
     // Handle non-OK responses
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await readJsonOrEmpty<Record<string, unknown>>(response)) || {};
+      const errorDetail =
+        typeof errorData.detail === "string" ? errorData.detail : undefined;
+      const errorMessageField =
+        typeof errorData.message === "string" ? errorData.message : undefined;
       const errorMessage =
-        errorData.detail ||
-        errorData.message ||
+        errorDetail ||
+        errorMessageField ||
         `HTTP ${response.status}: ${response.statusText}`;
 
       const totalTime = performance.now() - startTime;
@@ -263,7 +305,7 @@ export async function apiCall<T>(
 
     // Parse JSON response
     const parseStart = performance.now();
-    const data = await response.json();
+    const data = await readJsonOrEmpty<T>(response);
     const parseTime = performance.now() - parseStart;
 
     const totalTime = performance.now() - startTime;
@@ -276,13 +318,13 @@ export async function apiCall<T>(
         status: response.status,
         totalTime: totalTime.toFixed(2) + "ms",
         dataKeys:
-          typeof data === "object"
+          data && typeof data === "object"
             ? Object.keys(data).slice(0, 5)
             : typeof data,
       });
     }
 
-    return data;
+    return data as T;
   } catch (error) {
     const isAuthEndpoint =
       endpoint === "/v1/auth/login" || endpoint === "/v1/auth/refresh";

@@ -27,4 +27,6 @@ class Project(Document):
             IndexModel([("team_id", ASCENDING)]),
             IndexModel([("owner_id", ASCENDING)]),
             IndexModel([("members.user_id", ASCENDING)]),
+            IndexModel([("created_by", ASCENDING)]),
+            IndexModel([("is_archived", ASCENDING)]),
         ]

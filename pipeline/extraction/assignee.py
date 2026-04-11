@@ -13,6 +13,10 @@ QA_QUESTION = "Who will do this?"
 # Common generic speaker names and aliases
 GENERIC_SPEAKERS = {"speaker1", "speaker2", "person1", "person2", "participant"}
 
+_SHARED_QA_MODEL = None
+_SHARED_QA_TOKENIZER = None
+_SHARED_QA_DEVICE = None
+
 
 class AssigneeExtractor:
     """
@@ -48,26 +52,33 @@ class AssigneeExtractor:
     
     def _ensure_loaded(self):
         """Lazy-load QA model."""
+        global _SHARED_QA_MODEL, _SHARED_QA_TOKENIZER, _SHARED_QA_DEVICE
+
         if self._qa_model is not None:
             return
         
         try:
-            print(f"[*] Loading QA model: {self.qa_model_name}")
-            import torch
-            from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-            
-            torch.set_num_threads(1)
-            self._device = torch.device("cpu")
-            self._torch = torch
-            
-            self._qa_tokenizer = AutoTokenizer.from_pretrained(self.qa_model_name)
-            self._qa_model = AutoModelForQuestionAnswering.from_pretrained(
-                self.qa_model_name,
-                dtype=torch.float32,
-                low_cpu_mem_usage=False,
-            )
-            self._qa_model.to(self._device)
-            self._qa_model.eval()
+            if _SHARED_QA_MODEL is None or _SHARED_QA_TOKENIZER is None or _SHARED_QA_DEVICE is None:
+                print(f"[*] Loading QA model: {self.qa_model_name}")
+                import torch
+                from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+
+                torch.set_num_threads(1)
+                _SHARED_QA_DEVICE = torch.device("cpu")
+                self._torch = torch
+
+                _SHARED_QA_TOKENIZER = AutoTokenizer.from_pretrained(self.qa_model_name)
+                _SHARED_QA_MODEL = AutoModelForQuestionAnswering.from_pretrained(
+                    self.qa_model_name,
+                    dtype=torch.float32,
+                    low_cpu_mem_usage=False,
+                )
+                _SHARED_QA_MODEL.to(_SHARED_QA_DEVICE)
+                _SHARED_QA_MODEL.eval()
+
+            self._qa_tokenizer = _SHARED_QA_TOKENIZER
+            self._qa_model = _SHARED_QA_MODEL
+            self._device = _SHARED_QA_DEVICE
             self.use_qa = True
             print(f"[+] QA model loaded")
         except Exception as e:

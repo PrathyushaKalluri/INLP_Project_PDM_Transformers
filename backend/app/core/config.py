@@ -32,9 +32,9 @@ class Settings(BaseSettings):
     NLP_MODE: str = "local"
     NLP_PIPELINE_PATH: str = "pipeline"  # Path to NLP pipeline directory
     NLP_SERVICE_BASE_URL: str = "http://localhost:8001"
-    NLP_SERVICE_TIMEOUT_SECONDS: int = 300
+    NLP_SERVICE_TIMEOUT_SECONDS: int = 45
     NLP_SERVICE_POLL_INTERVAL_SECONDS: int = 2
-    NLP_SERVICE_MAX_POLL_SECONDS: int = 300
+    NLP_SERVICE_MAX_POLL_SECONDS: int = 45
 
     @property
     def max_upload_bytes(self) -> int:

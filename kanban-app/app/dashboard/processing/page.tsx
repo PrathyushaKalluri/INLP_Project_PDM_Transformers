@@ -45,12 +45,17 @@ export default function ProcessingPage() {
           hasCompletedRef.current = true;
           await completeProcessing();
           router.replace("/dashboard/publish");
+        } else if (status.processingStatus === "CANCELLED") {
+          router.replace("/dashboard/processing/cancelled");
         } else if (status.processingStatus === "FAILED") {
           console.error(
             "[Processing] Transcript processing failed:",
             status.errorMessage,
           );
-          router.replace("/dashboard/processing/cancelled");
+          const reason = encodeURIComponent(
+            status.errorMessage || "Transcript processing failed",
+          );
+          router.replace(`/dashboard/processing/failed?reason=${reason}`);
         } else if (processingState.currentStep < PROCESSING_STEPS.length - 2) {
           // Keep visual progress moving while backend remains in PENDING/PROCESSING.
           advanceProcessing();
@@ -61,7 +66,7 @@ export default function ProcessingPage() {
     };
 
     pollStatus();
-    const interval = setInterval(pollStatus, 2000);
+    const interval = setInterval(pollStatus, 4000);
 
     return () => clearInterval(interval);
   }, [

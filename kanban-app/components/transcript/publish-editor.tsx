@@ -74,14 +74,21 @@ export function PublishEditor() {
   );
 
   useEffect(() => {
-    const fetchTeamMembers = async () => {
-      if (!currentProject?.teamId) {
-        setUsers([]);
-        return;
-      }
+    if (!selectedProject) return;
 
+    let cancelled = false;
+
+    const loadTranscripts = async () => {
       try {
-        const members = await listTeamMembersApi(currentProject.teamId);
+        const [members, items] = await Promise.all([
+          currentProject?.teamId
+            ? listTeamMembersApi(currentProject.teamId)
+            : Promise.resolve([]),
+          listTranscriptsApi(selectedProject),
+        ]);
+
+        if (cancelled) return;
+
         setUsers(
           members.map((m) => ({
             id: m.user_id,
@@ -96,21 +103,6 @@ export function PublishEditor() {
               .toUpperCase(),
           })),
         );
-      } catch (error) {
-        console.error("[PublishEditor] Failed to load team members:", error);
-        setUsers([]);
-      }
-    };
-
-    fetchTeamMembers();
-  }, [currentProject?.teamId]);
-
-  useEffect(() => {
-    if (!selectedProject) return;
-
-    const loadTranscripts = async () => {
-      try {
-        const items = await listTranscriptsApi(selectedProject);
         setTranscripts(items);
 
         if (
@@ -135,8 +127,12 @@ export function PublishEditor() {
     };
 
     loadTranscripts();
+    return () => {
+      cancelled = true;
+    };
   }, [
     selectedProject,
+    currentProject?.teamId,
     transcriptQueryId,
     activeTranscriptId,
     setActiveTranscript,
@@ -313,15 +309,17 @@ export function PublishEditor() {
       return;
     }
 
+    const taskIndexById = new Map(
+      transcriptTasks.map((task, index) => [task.id, index]),
+    );
+
     setTasks(
       tasks.map((task) => {
         if (task.transcriptReference !== transcriptId) {
           return task;
         }
 
-        const taskIndex = transcriptTasks.findIndex(
-          (entry) => entry.id === task.id,
-        );
+        const taskIndex = taskIndexById.get(task.id) ?? -1;
         const actionItem = actionItems[taskIndex];
 
         if (!actionItem) {

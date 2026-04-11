@@ -46,53 +46,53 @@ export default function KanbanPage() {
     fetchProjects();
   }, []);
 
-  // Fetch tasks when selected project changes
+  // Fetch tasks and team members together when the active project changes.
   useEffect(() => {
-    const fetchTasks = async () => {
-      if (!selectedProject) return;
+    let cancelled = false;
+
+    const fetchProjectData = async () => {
+      if (!selectedProject || !currentProject) return;
 
       try {
         setLoading(true);
         setError(null);
-        const result = await listTasks({ projectId: selectedProject });
-        setTasks(result.tasks);
-      } catch (err) {
-        console.error("Failed to fetch tasks:", err);
-        setError("Failed to load tasks");
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchTasks();
-  }, [selectedProject, setTasks]);
+        const [taskResult, members] = await Promise.all([
+          listTasks({ projectId: selectedProject }),
+          currentProject.teamId
+            ? listTeamMembersApi(currentProject.teamId)
+            : Promise.resolve([]),
+        ]);
 
-  const currentProject = projects.find(
-    (project) => project.id === selectedProject,
-  );
+        if (cancelled) return;
 
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      if (!currentProject?.teamId) {
-        setAssigneeNamesById({});
-        return;
-      }
+        setTasks(taskResult.tasks);
 
-      try {
-        const members = await listTeamMembersApi(currentProject.teamId);
         const map = members.reduce<Record<string, string>>((acc, member) => {
           acc[member.user_id] = member.full_name;
           return acc;
         }, {});
         setAssigneeNamesById(map);
       } catch (err) {
-        console.error("Failed to load team members:", err);
-        setAssigneeNamesById({});
+        console.error("Failed to fetch tasks:", err);
+        setError("Failed to load tasks");
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchTeamMembers();
-  }, [currentProject?.teamId]);
+    fetchProjectData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProject, currentProject, setTasks]);
+
+  const currentProject = projects.find(
+    (project) => project.id === selectedProject,
+  );
 
   const filteredTasks = useMemo(() => {
     if (!selectedProject) {
@@ -120,11 +120,25 @@ export default function KanbanPage() {
     );
   }
 
-  const todo = filteredTasks.filter((task) => task.status === "todo");
-  const inProgress = filteredTasks.filter(
-    (task) => task.status === "in-progress",
-  );
-  const completed = filteredTasks.filter((task) => task.status === "completed");
+  const { todo, inProgress, completed } = useMemo(() => {
+    return filteredTasks.reduce(
+      (acc, task) => {
+        if (task.status === "todo") {
+          acc.todo.push(task);
+        } else if (task.status === "in-progress") {
+          acc.inProgress.push(task);
+        } else {
+          acc.completed.push(task);
+        }
+        return acc;
+      },
+      {
+        todo: [] as typeof filteredTasks,
+        inProgress: [] as typeof filteredTasks,
+        completed: [] as typeof filteredTasks,
+      },
+    );
+  }, [filteredTasks]);
 
   const hasNoTasks = !loading && filteredTasks.length === 0;
 
