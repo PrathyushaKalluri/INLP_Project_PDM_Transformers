@@ -196,7 +196,9 @@ export async function apiCall<T>(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), requestTimeout);
 
-  const readJsonOrEmpty = async <R>(response: Response): Promise<R | undefined> => {
+  const readJsonOrEmpty = async <R>(
+    response: Response,
+  ): Promise<R | undefined> => {
     const contentLength = response.headers.get("content-length");
     const contentType = response.headers.get("content-type") || "";
 
@@ -271,7 +273,8 @@ export async function apiCall<T>(
 
     // Handle non-OK responses
     if (!response.ok) {
-      const errorData = (await readJsonOrEmpty<Record<string, unknown>>(response)) || {};
+      const errorData =
+        (await readJsonOrEmpty<Record<string, unknown>>(response)) || {};
       const errorDetail =
         typeof errorData.detail === "string" ? errorData.detail : undefined;
       const errorMessageField =

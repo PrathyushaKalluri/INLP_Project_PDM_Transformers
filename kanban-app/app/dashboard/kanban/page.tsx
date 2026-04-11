@@ -23,7 +23,9 @@ export default function KanbanPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [assigneeNamesById, setAssigneeNamesById] = useState<Record<string, string>>({});
+  const [assigneeNamesById, setAssigneeNamesById] = useState<
+    Record<string, string>
+  >({});
 
   // Fetch projects on mount
   useEffect(() => {

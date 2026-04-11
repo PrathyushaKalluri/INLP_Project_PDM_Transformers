@@ -379,7 +379,11 @@ export function PublishEditor() {
               ))}
             </select>
           </div>
-          <Button variant="secondary" onClick={saveEdits} disabled={isSavingEdits}>
+          <Button
+            variant="secondary"
+            onClick={saveEdits}
+            disabled={isSavingEdits}
+          >
             {isSavingEdits ? "Saving..." : "Save Edits"}
           </Button>
           <Button onClick={publish} disabled={isPublishing}>

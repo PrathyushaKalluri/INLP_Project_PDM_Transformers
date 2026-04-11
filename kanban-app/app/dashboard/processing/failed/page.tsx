@@ -33,9 +33,7 @@ export default function ProcessingFailedPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-text-secondary">
-            {reason}
-          </p>
+          <p className="text-sm text-text-secondary">{reason}</p>
           <p className="text-xs text-text-secondary">
             Redirecting you back to upload transcript...
           </p>
