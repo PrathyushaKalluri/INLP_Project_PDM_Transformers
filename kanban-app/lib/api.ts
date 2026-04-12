@@ -10,15 +10,41 @@
 
 // Note: Base URL is just /api, not /api/v1
 // Callers should specify full path: /v1/teams or /frontend/projects
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, "") ||
-  "http://localhost:8000/api";
+function normalizeApiRoot(value: string): string {
+  return value.replace(/\/$/, "");
+}
+
+function resolveApiBase(): string {
+  const apiEndpoint = process.env.NEXT_PUBLIC_API_ENDPOINT?.trim();
+  if (apiEndpoint) {
+    return normalizeApiRoot(apiEndpoint);
+  }
+
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE?.trim();
+  if (apiBase) {
+    return normalizeApiRoot(apiBase);
+  }
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+  if (apiBaseUrl) {
+    const normalized = normalizeApiRoot(apiBaseUrl);
+    return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+  }
+
+  return process.env.NODE_ENV === "development"
+    ? "http://localhost:8000/api"
+    : "/api";
+}
+
+const API_BASE = resolveApiBase();
 
 // Fallback used only for auth timeouts to keep login responsive if a stale
 // local process occupies :8000 while backend is running on an alternate port.
 const AUTH_FALLBACK_BASE =
   process.env.NEXT_PUBLIC_API_FALLBACK_BASE?.replace(/\/$/, "") ||
-  "http://127.0.0.1:8010/api";
+  (process.env.NODE_ENV === "development"
+    ? "http://127.0.0.1:8010/api"
+    : "/api");
 const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds
 const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds for auth flows
 const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds for project CRUD
