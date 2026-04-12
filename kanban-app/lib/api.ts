@@ -48,6 +48,7 @@ const AUTH_FALLBACK_BASE =
 const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds
 const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds for auth flows
 const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds for project CRUD
+const TEAM_REQUEST_TIMEOUT = 30000; // 30 seconds for team/workspace list operations
 
 function getRequestTimeout(endpoint: string): number {
   if (
@@ -65,6 +66,15 @@ function getRequestTimeout(endpoint: string): number {
     endpoint.startsWith("/v1/projects/")
   ) {
     return PROJECT_REQUEST_TIMEOUT;
+  }
+
+  if (
+    endpoint === "/v1/teams" ||
+    endpoint.startsWith("/v1/teams/") ||
+    endpoint === "/v1/workspaces" ||
+    endpoint.startsWith("/v1/workspaces/")
+  ) {
+    return TEAM_REQUEST_TIMEOUT;
   }
 
   return DEFAULT_REQUEST_TIMEOUT;

@@ -21,6 +21,8 @@ import { listAllUsers } from "@/lib/users";
 import { listTeamsApi, type Team } from "@/lib/teams";
 import type { User } from "@/types";
 
+const TEAM_PAGE_SIZE = 25;
+
 interface ProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,28 +55,18 @@ export function ProjectModal({
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [teamsLoading, setTeamsLoading] = useState(true);
+  const [teamsLoadingMore, setTeamsLoadingMore] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
+  const [teamPage, setTeamPage] = useState(1);
+  const [hasMoreTeams, setHasMoreTeams] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refresh teams and users whenever the modal opens.
+  // Refresh users when editing a project.
   useEffect(() => {
     if (!open) return;
 
     const fetchData = async () => {
       try {
-        setTeamsLoading(true);
-
-        // Fetch teams first
-        const userTeams = await listTeamsApi();
-        setTeams(userTeams);
-
-        // Use first team by default
-        if (!editing && userTeams.length > 0) {
-          setSelectedTeam(userTeams[0].id);
-        } else if (!editing && userTeams.length === 0) {
-          setError("No teams found. Please contact your administrator.");
-        }
-
-        // Fetch users only if editing a project
         if (editing) {
           try {
             const allUsers = await listAllUsers();
@@ -95,6 +87,78 @@ export function ProjectModal({
 
     fetchData();
   }, [open, editing]);
+
+  // Reset search/pagination each time modal opens for create mode.
+  useEffect(() => {
+    if (!open || editing) return;
+    setTeamSearch("");
+    setTeamPage(1);
+    setTeams([]);
+    setSelectedTeam(null);
+    setHasMoreTeams(false);
+    setError(null);
+  }, [open, editing]);
+
+  // Load teams incrementally with search.
+  useEffect(() => {
+    if (!open || editing) return;
+
+    let cancelled = false;
+    const isFirstPage = teamPage === 1;
+
+    const loadTeams = async () => {
+      try {
+        if (isFirstPage) {
+          setTeamsLoading(true);
+          setError(null);
+        } else {
+          setTeamsLoadingMore(true);
+        }
+
+        const fetched = await listTeamsApi({
+          page: teamPage,
+          limit: TEAM_PAGE_SIZE,
+          search: teamSearch,
+        });
+
+        if (cancelled) return;
+
+        setTeams((prev) => {
+          if (isFirstPage) return fetched;
+          const existing = new Set(prev.map((team) => team.id));
+          const next = fetched.filter((team) => !existing.has(team.id));
+          return [...prev, ...next];
+        });
+
+        setHasMoreTeams(fetched.length === TEAM_PAGE_SIZE);
+
+        if (isFirstPage) {
+          if (fetched.length > 0) {
+            setSelectedTeam((prev) => prev ?? fetched[0].id);
+          } else {
+            setSelectedTeam(null);
+            setError("No teams found. Try adjusting search.");
+          }
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : "Failed to load teams";
+        console.error("Failed to fetch teams:", err);
+        setError(msg);
+      } finally {
+        if (!cancelled) {
+          setTeamsLoading(false);
+          setTeamsLoadingMore(false);
+        }
+      }
+    };
+
+    const handle = setTimeout(loadTeams, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [open, editing, teamPage, teamSearch]);
 
   const canSave =
     name.trim().length >= 3 &&
@@ -233,6 +297,16 @@ export function ProjectModal({
               <Label htmlFor="team-select">
                 Select Team {teamsLoading && "*"}
               </Label>
+              <Input
+                id="team-search"
+                value={teamSearch}
+                onChange={(e) => {
+                  setTeamSearch(e.target.value);
+                  setTeamPage(1);
+                }}
+                placeholder="Search teams by name..."
+                disabled={loading || teamsLoading}
+              />
               <select
                 id="team-select"
                 value={selectedTeam || ""}
@@ -255,6 +329,16 @@ export function ProjectModal({
                   </>
                 )}
               </select>
+              {!teamsLoading && hasMoreTeams && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setTeamPage((prev) => prev + 1)}
+                  disabled={teamsLoadingMore || loading}
+                >
+                  {teamsLoadingMore ? "Loading more..." : "Load more teams"}
+                </Button>
+              )}
             </div>
           )}
 

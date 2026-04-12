@@ -37,6 +37,12 @@ export interface TeamsListResponse {
   message: string;
 }
 
+export interface ListTeamsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
 /**
  * Get all workspaces for the current user
  */
@@ -76,12 +82,25 @@ export async function getOrCreateDefaultWorkspaceApi(): Promise<Workspace> {
 /**
  * Get all teams for the current user
  */
-export async function listTeamsApi(): Promise<Team[]> {
+export async function listTeamsApi(params: ListTeamsParams = {}): Promise<Team[]> {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? 50;
+  const search = params.search?.trim() ?? "";
+
+  const query = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (search) {
+    query.set("search", search);
+  }
+
   console.log("[TeamsAPI] Fetching teams");
 
   try {
     // Use /v1 prefix for v1 API routes
-    const response = await api.get<Team[]>("/v1/teams");
+    const response = await api.get<Team[]>(`/v1/teams?${query.toString()}`);
     // Backend returns array directly
     if (Array.isArray(response)) {
       console.log("[TeamsAPI] ✓ Teams loaded:", response.length);

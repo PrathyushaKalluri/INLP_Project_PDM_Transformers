@@ -46,7 +46,7 @@ export default function KanbanPage() {
     };
 
     fetchProjects();
-  }, []);
+  }, [selectedProject, setProjects, setSelectedProject]);
 
   const currentProject = projects.find(
     (project) => project.id === selectedProject,
@@ -104,24 +104,6 @@ export default function KanbanPage() {
     return applyTaskFilters(scoped, filters, user?.id ?? null);
   }, [tasks, selectedProject, filters, user?.id]);
 
-  if (projects.length === 0) {
-    return (
-      <EmptyState
-        title="No projects"
-        description="Create a project from the sidebar to start organizing tasks."
-      />
-    );
-  }
-
-  if (!selectedProject || !currentProject) {
-    return (
-      <EmptyState
-        title="No project selected"
-        description="Pick a project from the sidebar to view the board."
-      />
-    );
-  }
-
   const { todo, inProgress, completed } = useMemo(() => {
     return filteredTasks.reduce(
       (acc, task) => {
@@ -141,6 +123,24 @@ export default function KanbanPage() {
       },
     );
   }, [filteredTasks]);
+
+  if (projects.length === 0) {
+    return (
+      <EmptyState
+        title="No projects"
+        description="Create a project from the sidebar to start organizing tasks."
+      />
+    );
+  }
+
+  if (!selectedProject || !currentProject) {
+    return (
+      <EmptyState
+        title="No project selected"
+        description="Pick a project from the sidebar to view the board."
+      />
+    );
+  }
 
   const hasNoTasks = !loading && filteredTasks.length === 0;
 

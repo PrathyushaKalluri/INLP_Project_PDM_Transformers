@@ -29,7 +29,7 @@ interface AddTaskModalProps {
 export function AddTaskModal({
   projectId,
   status,
-  triggerLabel = "+ Add Task",
+  triggerLabel = "Add Task",
 }: AddTaskModalProps) {
   const user = useAppStore((state) => state.user);
   const addTask = useAppStore((state) => state.addTask);
