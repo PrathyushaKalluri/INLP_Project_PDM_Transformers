@@ -79,6 +79,9 @@ class WorkspaceRepository:
         return ws
 
 
+# Repository pattern for Team document operations
+# Implements database-level queries with support for pagination and search
+# Uses member.user_id index for efficient membership lookups
 class TeamRepository:
     @staticmethod
     async def get_by_id(id: str) -> Team | None:

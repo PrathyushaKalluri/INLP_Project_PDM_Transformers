@@ -125,7 +125,12 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Kanban Projects (Scrollable, takes remaining space) */}
+      {/* 
+        Kanban Projects Section:
+        - min-h-0: Allows flex container to shrink below content size (enables scrolling)
+        - flex-1: Takes all remaining vertical space
+        - overflow-hidden: Clips content to container (scroll handled by ScrollArea child)
+      */}
       <div className="min-h-0 flex-1 overflow-hidden">
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">

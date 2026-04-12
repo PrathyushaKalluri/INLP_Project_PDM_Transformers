@@ -74,6 +74,9 @@ class TeamMember(BaseModel):
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# Team document model with embedded members
+# Index on members.user_id enables efficient queries for team listing by member
+# See repository.list_teams_for_user for pagination/search implementation
 class Team(Document):
     workspace_id: PydanticObjectId
     name: str

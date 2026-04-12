@@ -14,6 +14,10 @@ router = APIRouter(tags=["Teams & Workspaces"])
 
 # ── Workspaces ─────────────────────────────────────────────────────────────────
 
+# ── Teams & Workspaces API Endpoints ──
+# Supports full team management including pagination and search for scalable UX
+# See: kanban-app/lib/teams.ts for frontend client integration
+
 @router.post("/workspaces", response_model=WorkspaceResponse, status_code=201)
 async def create_workspace(
     data: WorkspaceCreate,

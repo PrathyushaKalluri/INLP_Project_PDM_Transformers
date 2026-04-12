@@ -1,3 +1,5 @@
+// Teams API client with pagination and search support
+// Coordinates with (/v1/teams) and team service for scalable team listing
 import { api } from "./api";
 
 export interface Workspace {

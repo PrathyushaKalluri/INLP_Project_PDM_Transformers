@@ -33,7 +33,11 @@ class WorkspaceService:
             raise forbidden("You are not a member of this workspace.")
 
 
+# Team service handles business logic for team operations including member management
+# Supports pagination and search for scalable team listing operations
 class TeamService:
+    # Create a new team within a workspace
+    # The creator is automatically added as an OWNER member
     async def create(self, workspace_id: str, data: TeamCreate, creator_id: PydanticObjectId) -> Team:
         workspace_oid = PydanticObjectId(workspace_id)
         team = await TeamRepository.create(

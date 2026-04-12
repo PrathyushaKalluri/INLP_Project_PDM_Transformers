@@ -248,6 +248,10 @@ def is_valid_task_title(title: str, root_verb: Optional[str] = None, obj: Option
 
 
 
+# ── Task Description Generator ──
+# Shared model cache variables (module-level) to enable model reuse across instances
+# On first cold-start, FLAN-T5 model loading takes ~15-20s; subsequent calls use cache
+# Publish endpoint timeout was increased to 60s to handle this cold-start period
 _SHARED_TASK_MODEL = None
 _SHARED_TASK_TOKENIZER = None
 _SHARED_TASK_DEVICE = None
@@ -265,7 +269,12 @@ class TaskDescriptionGenerator:
         self._torch = None
     
     def _ensure_loaded(self):
-        """Lazy-load FLAN-T5 model."""
+        """Lazy-load FLAN-T5 model on first use.
+        
+        Uses global cached model/tokenizer/device to avoid memory overhead of multiple model instances.
+        On first call: loads spaCy + transformers models (~15-20s, now covered by 60s publish timeout)
+        On subsequent calls: reuses cached models via global module variables
+        """
         global _SHARED_TASK_MODEL, _SHARED_TASK_TOKENIZER, _SHARED_TASK_DEVICE
 
         if self._model is not None:

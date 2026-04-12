@@ -45,12 +45,15 @@ const AUTH_FALLBACK_BASE =
   (process.env.NODE_ENV === "development"
     ? "http://127.0.0.1:8010/api"
     : "/api");
-const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds
-const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds for auth flows
-const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds for project CRUD
-const TEAM_REQUEST_TIMEOUT = 30000; // 30 seconds for team/workspace list operations
-const NLP_PIPELINE_TIMEOUT = 60000; // 60 seconds for NLP processing (model cold-start on first publish)
+// Request timeout constants tuned by endpoint type
+const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds - standard endpoints
+const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds - auth flows (login, register, refresh)
+const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds - project CRUD operations
+const TEAM_REQUEST_TIMEOUT = 30000; // 30 seconds - team/workspace list operations with pagination/search
+const NLP_PIPELINE_TIMEOUT = 60000; // 60 seconds - NLP processing endpoints (cold-start of models on first publish/process)
 
+// Route request to appropriate timeout tier based on endpoint path
+// This prevents timeouts on long-running NLP operations while keeping auth responsive
 function getRequestTimeout(endpoint: string): number {
   if (
     endpoint === "/v1/auth/login" ||
@@ -79,10 +82,7 @@ function getRequestTimeout(endpoint: string): number {
   }
 
   // NLP pipeline endpoints (publish, process) need longer timeout for model loading
-  if (
-    endpoint === "/frontend/publish" ||
-    endpoint === "/frontend/process"
-  ) {
+  if (endpoint === "/frontend/publish" || endpoint === "/frontend/process") {
     return NLP_PIPELINE_TIMEOUT;
   }
 
