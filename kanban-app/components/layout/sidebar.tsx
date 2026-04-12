@@ -75,7 +75,7 @@ export function Sidebar({
   const isManager = user?.role === "manager";
 
   return (
-    <aside className="flex h-full w-full flex-col rounded-xl border border-border bg-card p-4 shadow-sm md:sticky md:top-6 md:h-[calc(100vh-3rem)] md:w-72">
+    <aside className="flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm md:sticky md:top-6 md:h-[calc(100vh-3rem)] md:w-72">
       <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
         <Avatar>
           <AvatarFallback>{user?.avatar ?? "NA"}</AvatarFallback>
@@ -184,7 +184,7 @@ export function Sidebar({
 
       <Separator className="my-4" />
 
-      <div className="space-y-1">
+      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
         <Link
           href="/dashboard/teams"
           className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${

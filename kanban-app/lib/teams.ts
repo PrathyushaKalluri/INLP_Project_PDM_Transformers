@@ -82,7 +82,9 @@ export async function getOrCreateDefaultWorkspaceApi(): Promise<Workspace> {
 /**
  * Get all teams for the current user
  */
-export async function listTeamsApi(params: ListTeamsParams = {}): Promise<Team[]> {
+export async function listTeamsApi(
+  params: ListTeamsParams = {},
+): Promise<Team[]> {
   const page = params.page ?? 1;
   const limit = params.limit ?? 50;
   const search = params.search?.trim() ?? "";
