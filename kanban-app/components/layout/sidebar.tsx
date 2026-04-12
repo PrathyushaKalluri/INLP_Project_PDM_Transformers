@@ -93,26 +93,6 @@ export function Sidebar({
 
         <Separator className="my-4" />
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-primary">Teams</h3>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCreateTeam}
-              title="Create team"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
-            Teams management available from project creation menu
-          </div>
-        </div>
-
-        <Separator className="my-4" />
-
         {/* Kanban Header (Fixed) */}
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-text-primary">Kanban</h3>
