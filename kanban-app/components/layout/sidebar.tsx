@@ -125,19 +125,14 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* 
-        Kanban Projects Section:
-        - min-h-0: Allows flex container to shrink below content size (enables scrolling)
-        - flex-1: Takes all remaining vertical space
-        - overflow-hidden: Clips content to container (scroll handled by ScrollArea child)
-      */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      {/* Kanban projects are rendered directly under the heading with a fixed scroll window. */}
+      <div className="mt-2">
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
             No projects available.
           </div>
         ) : (
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-52">
             <div className="space-y-1 pr-3">
               {projects.map((project) => {
                 const active = selectedProject === project.id;
