@@ -48,6 +48,10 @@ export default function KanbanPage() {
     fetchProjects();
   }, []);
 
+  const currentProject = projects.find(
+    (project) => project.id === selectedProject,
+  );
+
   // Fetch tasks and team members together when the active project changes.
   useEffect(() => {
     let cancelled = false;
@@ -91,10 +95,6 @@ export default function KanbanPage() {
       cancelled = true;
     };
   }, [selectedProject, currentProject, setTasks]);
-
-  const currentProject = projects.find(
-    (project) => project.id === selectedProject,
-  );
 
   const filteredTasks = useMemo(() => {
     if (!selectedProject) {

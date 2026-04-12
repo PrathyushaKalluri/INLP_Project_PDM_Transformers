@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --font-inter: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --background: #f8f9fb;
   --card: #ffffff;
   --primary: #e6a57e;
