@@ -76,43 +76,45 @@ export function Sidebar({
 
   return (
     <aside className="flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm md:sticky md:top-6 md:h-[calc(100vh-3rem)] md:w-72">
-      <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
-        <Avatar>
-          <AvatarFallback>{user?.avatar ?? "NA"}</AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="text-sm font-medium text-text-primary">
-            {user?.name ?? "Guest"}
-          </p>
-          <p className="text-xs text-text-secondary">
-            {user?.role ?? "visitor"}
-          </p>
-        </div>
-      </div>
-
-      <Separator className="my-4" />
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-text-primary">Teams</h3>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onCreateTeam}
-            title="Create team"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+      {/* Header: User Profile (Fixed) */}
+      <div className="flex-shrink-0">
+        <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
+          <Avatar>
+            <AvatarFallback>{user?.avatar ?? "NA"}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium text-text-primary">
+              {user?.name ?? "Guest"}
+            </p>
+            <p className="text-xs text-text-secondary">
+              {user?.role ?? "visitor"}
+            </p>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
-          Teams management available from project creation menu
+        <Separator className="my-4" />
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-text-primary">Teams</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCreateTeam}
+              title="Create team"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
+            Teams management available from project creation menu
+          </div>
         </div>
-      </div>
 
-      <Separator className="my-4" />
+        <Separator className="my-4" />
 
-      <div className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden">
+        {/* Kanban Header (Fixed) */}
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-text-primary">Kanban</h3>
           {isManager ? (
@@ -121,13 +123,16 @@ export function Sidebar({
             </Button>
           ) : null}
         </div>
+      </div>
 
+      {/* Kanban Projects (Scrollable, takes remaining space) */}
+      <div className="min-h-0 flex-1 overflow-hidden">
         {projects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border p-3 text-xs text-text-secondary">
             No projects available.
           </div>
         ) : (
-          <ScrollArea className="min-h-0 flex-1">
+          <ScrollArea className="h-full">
             <div className="space-y-1 pr-3">
               {projects.map((project) => {
                 const active = selectedProject === project.id;
@@ -182,85 +187,98 @@ export function Sidebar({
         )}
       </div>
 
-      <Separator className="my-4" />
+      {/* Bottom Actions (Fixed) */}
+      <div className="flex-shrink-0">
+        <Separator className="my-4" />
 
-      <div className="space-y-1">
-        <Link
-          href="/dashboard/teams"
-          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-            pathname === "/dashboard/teams"
-              ? "bg-primary/20 text-text-primary"
-              : "text-text-secondary hover:bg-muted"
-          }`}
-        >
-          <Users className="h-4 w-4" />
-          Teams Management
-        </Link>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between rounded-xl px-3 py-2">
+            <Link
+              href="/dashboard/teams"
+              className={`flex flex-1 items-center gap-2 text-sm ${
+                pathname === "/dashboard/teams"
+                  ? "bg-primary/20 text-text-primary"
+                  : "text-text-secondary hover:bg-muted"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Teams Management
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCreateTeam}
+              title="Create team"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <Link
-          href="/dashboard/publish"
-          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-            pathname === "/dashboard/publish"
-              ? "bg-primary/20 text-text-primary"
-              : "text-text-secondary hover:bg-muted"
-          }`}
-        >
-          <FileText className="h-4 w-4" />
-          Meeting Summaries
-        </Link>
+          <Link
+            href="/dashboard/publish"
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+              pathname === "/dashboard/publish"
+                ? "bg-primary/20 text-text-primary"
+                : "text-text-secondary hover:bg-muted"
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            Meeting Summaries
+          </Link>
 
-        <Link
-          href="/dashboard/settings"
-          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-            pathname === "/dashboard/settings"
-              ? "bg-primary/20 text-text-primary"
-              : "text-text-secondary hover:bg-muted"
-          }`}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </Link>
+          <Link
+            href="/dashboard/settings"
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+              pathname === "/dashboard/settings"
+                ? "bg-primary/20 text-text-primary"
+                : "text-text-secondary hover:bg-muted"
+            }`}
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
 
-        {isManager ? (
+          {isManager ? (
+            <button
+              type="button"
+              onClick={onAddProject}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-text-secondary hover:bg-muted"
+            >
+              <Plus className="h-4 w-4" />
+              Add Project
+            </button>
+          ) : null}
+
+          <Link
+            href="/dashboard/upload"
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+              pathname === "/dashboard/upload"
+                ? "bg-primary/20 text-text-primary"
+                : "text-text-secondary hover:bg-muted"
+            }`}
+          >
+            <Upload className="h-4 w-4" />
+            Upload Transcript
+          </Link>
+
           <button
             type="button"
-            onClick={onAddProject}
+            onClick={exportWorkspace}
             className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-text-secondary hover:bg-muted"
           >
-            <Plus className="h-4 w-4" />
-            Add Project
+            <Download className="h-4 w-4" />
+            Export
           </button>
-        ) : null}
 
-        <Link
-          href="/dashboard/upload"
-          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-            pathname === "/dashboard/upload"
-              ? "bg-primary/20 text-text-primary"
-              : "text-text-secondary hover:bg-muted"
-          }`}
-        >
-          <Upload className="h-4 w-4" />
-          Upload Transcript
-        </Link>
-
-        <button
-          type="button"
-          onClick={exportWorkspace}
-          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-text-secondary hover:bg-muted"
-        >
-          <Download className="h-4 w-4" />
-          Export
-        </button>
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-danger hover:bg-danger/10"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-danger hover:bg-danger/10"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
   );
