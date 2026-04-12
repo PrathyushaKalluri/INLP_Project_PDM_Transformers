@@ -47,10 +47,11 @@ const AUTH_FALLBACK_BASE =
     : "/api");
 // Request timeout constants tuned by endpoint type
 const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds - standard endpoints
-const AUTH_REQUEST_TIMEOUT = 25000; // 25 seconds - auth flows (login, register, refresh)
+const AUTH_REQUEST_TIMEOUT = 60000; // 60 seconds - auth flows can cold-start on the first request
 const PROJECT_REQUEST_TIMEOUT = 30000; // 30 seconds - project CRUD operations
 const TEAM_REQUEST_TIMEOUT = 30000; // 30 seconds - team/workspace list operations with pagination/search
 const NLP_PIPELINE_TIMEOUT = 60000; // 60 seconds - NLP processing endpoints (cold-start of models on first publish/process)
+const AUTH_RETRY_DELAY_MS = 750;
 
 // Route request to appropriate timeout tier based on endpoint path
 // This prevents timeouts on long-running NLP operations while keeping auth responsive
@@ -208,6 +209,14 @@ async function refreshAccessToken(): Promise<TokenPair | null> {
 export async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {},
+): Promise<T> {
+  return apiCallWithRetry<T>(endpoint, options, 0);
+}
+
+async function apiCallWithRetry<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  retryCount: number,
 ): Promise<T> {
   const requestId = Math.random().toString(36).slice(2, 9);
   const startTime = performance.now();
@@ -411,6 +420,22 @@ export async function apiCall<T>(
     console.error(
       `[API_${requestId}] ERROR - ${error instanceof Error ? error.message : String(error)} (${totalTime.toFixed(2)}ms)`,
     );
+    const isRetryableAuthError =
+      isAuthEndpoint &&
+      retryCount === 0 &&
+      error instanceof Error &&
+      (error.name === "AbortError" ||
+        error.message.includes("timeout") ||
+        error.message.includes("Failed to fetch"));
+
+    if (isRetryableAuthError) {
+      console.warn(
+        `[API_${requestId}] Auth request failed on first attempt; retrying once after ${AUTH_RETRY_DELAY_MS}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, AUTH_RETRY_DELAY_MS));
+      return apiCallWithRetry<T>(endpoint, options, retryCount + 1);
+    }
+
     throw error;
   } finally {
     clearTimeout(timeout);

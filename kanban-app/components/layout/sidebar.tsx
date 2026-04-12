@@ -112,54 +112,50 @@ export function Sidebar({
           </div>
         ) : (
           <div className="max-h-52 space-y-1 overflow-y-auto pr-2">
-              {projects.map((project) => {
-                const active = selectedProject === project.id;
-                return (
-                  <div
-                    key={project.id}
-                    className={`flex items-center gap-1 rounded-xl border px-2 py-1 ${
-                      active
-                        ? "border-primary bg-primary/20"
-                        : "border-border/60 hover:border-border"
-                    }`}
+            {projects.map((project) => {
+              const active = selectedProject === project.id;
+              return (
+                <div
+                  key={project.id}
+                  className={`flex items-center gap-1 rounded-xl border px-2 py-1 ${
+                    active
+                      ? "border-primary bg-primary/20"
+                      : "border-border/60 hover:border-border"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="flex flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left"
+                    onClick={() => {
+                      setSelectedProject(project.id);
+                      router.push("/dashboard/kanban");
+                    }}
                   >
-                    <button
-                      type="button"
-                      className="flex flex-1 items-center gap-2 rounded-lg px-1 py-1 text-left"
-                      onClick={() => {
-                        setSelectedProject(project.id);
-                        router.push("/dashboard/kanban");
-                      }}
-                    >
-                      <FolderKanban className="h-4 w-4 text-text-secondary" />
-                      <span className="truncate text-sm text-text-primary">
-                        {project.name || "Untitled project"}
-                      </span>
-                    </button>
+                    <FolderKanban className="h-4 w-4 text-text-secondary" />
+                    <span className="truncate text-sm text-text-primary">
+                      {project.name || "Untitled project"}
+                    </span>
+                  </button>
 
-                    {isManager ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => onEditProject(project.id)}
-                          >
-                            Edit project
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
-                  </div>
-                );
-              })}
+                  {isManager ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => onEditProject(project.id)}
+                        >
+                          Edit project
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
