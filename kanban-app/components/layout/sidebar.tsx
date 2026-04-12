@@ -22,7 +22,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -75,7 +74,7 @@ export function Sidebar({
   const isManager = user?.role === "manager";
 
   return (
-    <aside className="flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm md:sticky md:top-6 md:h-[calc(100vh-3rem)] md:w-72">
+    <aside className="flex w-full min-h-0 flex-col overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-sm md:sticky md:top-6 md:h-[calc(100vh-3rem)] md:w-72">
       {/* Header: User Profile (Fixed) */}
       <div className="flex-shrink-0">
         <div className="flex items-center gap-3 rounded-xl bg-muted/60 p-3">
@@ -132,8 +131,7 @@ export function Sidebar({
             No projects available.
           </div>
         ) : (
-          <ScrollArea className="h-52">
-            <div className="space-y-1 pr-3">
+          <div className="max-h-52 space-y-1 overflow-y-auto pr-2">
               {projects.map((project) => {
                 const active = selectedProject === project.id;
                 return (
@@ -142,7 +140,7 @@ export function Sidebar({
                     className={`flex items-center gap-1 rounded-xl border px-2 py-1 ${
                       active
                         ? "border-primary bg-primary/20"
-                        : "border-transparent hover:border-border"
+                        : "border-border/60 hover:border-border"
                     }`}
                   >
                     <button
@@ -155,7 +153,7 @@ export function Sidebar({
                     >
                       <FolderKanban className="h-4 w-4 text-text-secondary" />
                       <span className="truncate text-sm text-text-primary">
-                        {project.name}
+                        {project.name || "Untitled project"}
                       </span>
                     </button>
 
@@ -182,13 +180,12 @@ export function Sidebar({
                   </div>
                 );
               })}
-            </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
 
       {/* Bottom Actions (Fixed) */}
-      <div className="flex-shrink-0">
+      <div className="mt-2 flex-shrink-0">
         <Separator className="my-4" />
 
         <div className="space-y-1">
