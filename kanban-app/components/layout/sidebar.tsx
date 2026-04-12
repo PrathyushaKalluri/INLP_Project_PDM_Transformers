@@ -112,7 +112,7 @@ export function Sidebar({
 
       <Separator className="my-4" />
 
-      <div className="space-y-2">
+      <div className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-text-primary">Kanban</h3>
           {isManager ? (
@@ -127,7 +127,7 @@ export function Sidebar({
             No projects available.
           </div>
         ) : (
-          <ScrollArea className="h-52">
+          <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-1 pr-3">
               {projects.map((project) => {
                 const active = selectedProject === project.id;
@@ -184,7 +184,7 @@ export function Sidebar({
 
       <Separator className="my-4" />
 
-      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+      <div className="space-y-1">
         <Link
           href="/dashboard/teams"
           className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
