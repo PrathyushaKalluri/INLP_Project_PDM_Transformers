@@ -85,4 +85,7 @@ class Team(Document):
 
     class Settings:
         name = "teams"
-        indexes = [IndexModel([("workspace_id", ASCENDING)])]
+        indexes = [
+            IndexModel([("workspace_id", ASCENDING)]),
+            IndexModel([("members.user_id", ASCENDING)]),
+        ]

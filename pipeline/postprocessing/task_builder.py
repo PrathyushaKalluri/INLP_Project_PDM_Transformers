@@ -248,14 +248,14 @@ def is_valid_task_title(title: str, root_verb: Optional[str] = None, obj: Option
 
 
 
-class TaskDescriptionGenerator:
-    """Generate task descriptions from sentence text using FLAN-T5."""
-
-
 _SHARED_TASK_MODEL = None
 _SHARED_TASK_TOKENIZER = None
 _SHARED_TASK_DEVICE = None
-    
+
+
+class TaskDescriptionGenerator:
+    """Generate task descriptions from sentence text using FLAN-T5."""
+
     def __init__(self, model_name: str = MODEL_NAME):
         """Initialize task description generator."""
         self.model_name = model_name

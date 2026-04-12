@@ -92,8 +92,31 @@ class TeamRepository:
         return await Team.find(Team.workspace_id == workspace_id).to_list()
 
     @staticmethod
-    async def list_for_user(user_id: PydanticObjectId) -> list[Team]:
-        return await Team.find({"members.user_id": user_id}).to_list()
+    async def list_for_user(
+        user_id: PydanticObjectId,
+        *,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> list[Team]:
+        query: dict = {"members.user_id": user_id}
+
+        if search and search.strip():
+            query["name"] = {
+                "$regex": search.strip(),
+                "$options": "i",
+            }
+
+        safe_skip = max(0, skip)
+        safe_limit = max(1, min(limit, 100))
+
+        return (
+            await Team.find(query)
+            .sort("name")
+            .skip(safe_skip)
+            .limit(safe_limit)
+            .to_list()
+        )
 
     @staticmethod
     async def create(**kwargs) -> Team:

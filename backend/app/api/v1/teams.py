@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -99,9 +99,17 @@ async def list_teams(
 @router.get("/teams", response_model=list[TeamResponse])
 async def list_my_teams(
     current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    search: str | None = Query(default=None),
 ):
     svc = TeamService()
-    return await svc.list_for_user(current_user.id)
+    return await svc.list_for_user(
+        current_user.id,
+        page=page,
+        limit=limit,
+        search=search,
+    )
 
 
 @router.get("/teams/{team_id}", response_model=TeamResponse)

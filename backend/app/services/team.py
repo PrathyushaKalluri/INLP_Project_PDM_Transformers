@@ -59,8 +59,23 @@ class TeamService:
         WorkspaceService().require_member(ws, requester_id)
         return await TeamRepository.list_for_workspace(PydanticObjectId(workspace_id))
 
-    async def list_for_user(self, user_id: PydanticObjectId) -> list[Team]:
-        return await TeamRepository.list_for_user(user_id)
+    async def list_for_user(
+        self,
+        user_id: PydanticObjectId,
+        *,
+        search: str | None = None,
+        page: int = 1,
+        limit: int = 50,
+    ) -> list[Team]:
+        safe_page = max(1, page)
+        safe_limit = max(1, min(limit, 100))
+        skip = (safe_page - 1) * safe_limit
+        return await TeamRepository.list_for_user(
+            user_id,
+            search=search,
+            skip=skip,
+            limit=safe_limit,
+        )
 
     async def add_member(
         self, team_id: str, data: TeamMemberAdd, requester_id: PydanticObjectId
