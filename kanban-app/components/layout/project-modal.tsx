@@ -273,14 +273,19 @@ export function ProjectModal({
           type: "success",
         });
       } else {
+        const teamId = selectedTeam;
+        if (!teamId) {
+          throw new Error("Team selection is required");
+        }
+
         // Create new project via API using selected team
         console.log("[ProjectModal] Creating new project:", {
-          team_id: selectedTeam,
+          team_id: teamId,
           name: name.trim(),
           description: description.trim(),
         });
         const created = await createProject({
-          team_id: selectedTeam,
+          team_id: teamId,
           name: trimmedName,
           description: trimmedDescription,
         });
