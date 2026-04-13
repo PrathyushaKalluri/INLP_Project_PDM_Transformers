@@ -2,7 +2,7 @@ from beanie import PydanticObjectId
 
 from app.models.project import Project
 from app.repositories.project import ProjectRepository
-from app.repositories.user import UserRepository
+from app.repositories.user import TeamRepository, UserRepository
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.services.errors import conflict, forbidden, not_found
 from app.services.team import TeamService
@@ -11,6 +11,10 @@ from app.services.team import TeamService
 class ProjectService:
     def __init__(self) -> None:
         self.team_svc = TeamService()
+
+    async def _team_ids_for_user(self, user_id: PydanticObjectId) -> list[PydanticObjectId]:
+        teams = await TeamRepository.list_for_user(user_id=user_id, skip=0, limit=5000)
+        return [team.id for team in teams]
 
     async def create(self, data: ProjectCreate, creator_id: PydanticObjectId) -> Project:
         team = await self.team_svc.get_or_404(data.team_id)
@@ -63,13 +67,19 @@ class ProjectService:
         skip: int = 0,
         limit: int = 50,
     ) -> tuple[list[Project], int]:
+        team_ids = await self._team_ids_for_user(requester_id)
         projects = await ProjectRepository.list_for_user(
             user_id=requester_id,
+            team_ids=team_ids,
             include_archived=include_archived,
             skip=skip,
             limit=limit,
         )
-        total = await ProjectRepository.count_for_user(requester_id, include_archived)
+        total = await ProjectRepository.count_for_user(
+            user_id=requester_id,
+            team_ids=team_ids,
+            include_archived=include_archived,
+        )
         return projects, total
 
     async def list_ids_for_user(
@@ -77,7 +87,12 @@ class ProjectService:
         requester_id: PydanticObjectId,
         include_archived: bool = False,
     ) -> list[PydanticObjectId]:
-        return await ProjectRepository.list_ids_for_user(requester_id, include_archived)
+        team_ids = await self._team_ids_for_user(requester_id)
+        return await ProjectRepository.list_ids_for_user(
+            user_id=requester_id,
+            team_ids=team_ids,
+            include_archived=include_archived,
+        )
 
     async def list_for_team(
         self,
@@ -102,6 +117,8 @@ class ProjectService:
     async def _require_project_member(self, project_id: PydanticObjectId | str, user_id: PydanticObjectId) -> Project:
         project = await self.get_or_404(str(project_id))
         if self._is_project_member(project, user_id):
+            return project
+        if await self.team_svc.is_member(project.team_id, user_id):
             return project
         raise forbidden("You are not a member of this project.")
 

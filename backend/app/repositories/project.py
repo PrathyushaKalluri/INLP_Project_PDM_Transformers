@@ -36,16 +36,19 @@ class ProjectRepository:
     @staticmethod
     async def list_for_user(
         user_id: PydanticObjectId,
+        team_ids: list[PydanticObjectId] | None = None,
         include_archived: bool = False,
         skip: int = 0,
         limit: int = 50,
     ) -> list[Project]:
+        team_scope = team_ids or []
         query = Project.find(
             {
                 "$or": [
                     {"owner_id": user_id},
                     {"members.user_id": user_id},
                     {"created_by": user_id},
+                    {"team_id": {"$in": team_scope}},
                 ]
             }
         )
@@ -54,13 +57,19 @@ class ProjectRepository:
         return await query.skip(skip).limit(limit).to_list()
 
     @staticmethod
-    async def count_for_user(user_id: PydanticObjectId, include_archived: bool = False) -> int:
+    async def count_for_user(
+        user_id: PydanticObjectId,
+        team_ids: list[PydanticObjectId] | None = None,
+        include_archived: bool = False,
+    ) -> int:
+        team_scope = team_ids or []
         query = Project.find(
             {
                 "$or": [
                     {"owner_id": user_id},
                     {"members.user_id": user_id},
                     {"created_by": user_id},
+                    {"team_id": {"$in": team_scope}},
                 ]
             }
         )
@@ -69,9 +78,14 @@ class ProjectRepository:
         return await query.count()
 
     @staticmethod
-    async def list_ids_for_user(user_id: PydanticObjectId, include_archived: bool = False) -> list[PydanticObjectId]:
+    async def list_ids_for_user(
+        user_id: PydanticObjectId,
+        team_ids: list[PydanticObjectId] | None = None,
+        include_archived: bool = False,
+    ) -> list[PydanticObjectId]:
         projects = await ProjectRepository.list_for_user(
             user_id=user_id,
+            team_ids=team_ids,
             include_archived=include_archived,
             skip=0,
             limit=5000,
