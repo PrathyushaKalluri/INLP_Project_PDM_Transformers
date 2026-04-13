@@ -177,14 +177,16 @@ export function Sidebar({
               <Users className="h-4 w-4" />
               Teams Management
             </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onCreateTeam}
-              title="Create team"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            {isManager ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCreateTeam}
+                title="Create team"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            ) : null}
           </div>
 
           <Link

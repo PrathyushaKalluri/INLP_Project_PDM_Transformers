@@ -50,6 +50,7 @@ interface ExpandedTeam extends Team {
 export default function TeamsPage() {
   const user = useAppStore((state) => state.user);
   const addNotification = useAppStore((state) => state.addNotification);
+  const isManager = user?.role === "manager";
 
   const [teams, setTeams] = useState<ExpandedTeam[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -115,6 +116,7 @@ export default function TeamsPage() {
   }, [loadTeamsAndMembers]);
 
   const handleEditTeam = (team: ExpandedTeam) => {
+    if (!isManager) return;
     setSelectedTeam(team);
     setEditName(team.name);
     setEditDescription(team.description || "");
@@ -122,7 +124,7 @@ export default function TeamsPage() {
   };
 
   const handleSaveTeam = async () => {
-    if (!selectedTeam) return;
+    if (!selectedTeam || !isManager) return;
 
     try {
       setEditLoading(true);
@@ -155,6 +157,7 @@ export default function TeamsPage() {
   };
 
   const handleDeleteTeam = async (team: ExpandedTeam) => {
+    if (!isManager) return;
     if (
       !confirm(
         `Are you sure you want to delete "${team.name}"? This action cannot be undone.`,
@@ -184,7 +187,7 @@ export default function TeamsPage() {
   };
 
   const handleAddMember = async () => {
-    if (!selectedTeam || !selectedNewMember) return;
+    if (!selectedTeam || !selectedNewMember || !isManager) return;
 
     try {
       setMemberLoading(true);
@@ -221,7 +224,7 @@ export default function TeamsPage() {
   };
 
   const handleRemoveMember = async (member: TeamMember) => {
-    if (!selectedTeam) return;
+    if (!selectedTeam || !isManager) return;
 
     if (!confirm(`Remove ${member.full_name} from this team?`)) {
       return;
@@ -256,7 +259,7 @@ export default function TeamsPage() {
   };
 
   const handleUpdateMemberRole = async () => {
-    if (!selectedTeam || !selectedMember) return;
+    if (!selectedTeam || !selectedMember || !isManager) return;
 
     try {
       setRoleLoading(true);
@@ -297,6 +300,7 @@ export default function TeamsPage() {
   const isTeamOwner = selectedTeam?.members.some(
     (m) => m.user_id === user?.id && m.role === "OWNER",
   );
+  const canManageSelectedTeam = isManager && !!isTeamOwner;
 
   // Get available users to add (not already members)
   const availableUsers = allUsers.filter(
@@ -363,6 +367,13 @@ export default function TeamsPage() {
       {/* Team Details */}
       {selectedTeam && (
         <div className="space-y-6">
+          {!isManager && (
+            <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-text-secondary">
+              Team management is read-only for members. Only managers can edit
+              teams or change team membership.
+            </div>
+          )}
+
           {/* Team Header */}
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="mb-4 flex items-start justify-between">
@@ -377,7 +388,7 @@ export default function TeamsPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                {isTeamOwner && (
+                {canManageSelectedTeam && (
                   <>
                     <Button
                       variant="secondary"
@@ -432,7 +443,7 @@ export default function TeamsPage() {
                 <Users className="h-5 w-5" />
                 Team Members
               </h3>
-              {isTeamOwner && availableUsers.length > 0 && (
+              {canManageSelectedTeam && availableUsers.length > 0 && (
                 <Button size="sm" onClick={() => setMemberModalOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Member
@@ -469,7 +480,7 @@ export default function TeamsPage() {
                       >
                         {member.role}
                       </span>
-                      {isTeamOwner && member.user_id !== user?.id && (
+                      {canManageSelectedTeam && member.user_id !== user?.id && (
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"

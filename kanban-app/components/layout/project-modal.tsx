@@ -16,16 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/store/useAppStore";
-import {
-  addProjectMember,
-  createProject,
-  listProjectMembers,
-  removeProjectMember,
-  updateProject,
-} from "@/lib/projects";
-import { listAllUsers } from "@/lib/users";
+import { createProject, updateProject } from "@/lib/projects";
 import { listTeamsApi, type Team } from "@/lib/teams";
-import type { User } from "@/types";
 
 const TEAM_PAGE_SIZE = 25;
 
@@ -53,13 +45,6 @@ export function ProjectModal({
 
   const [name, setName] = useState(editing?.name ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
-  const [participants, setParticipants] = useState<string[]>(
-    editing?.participants ?? [],
-  );
-  const [initialParticipants, setInitialParticipants] = useState<string[]>(
-    editing?.participants ?? [],
-  );
-  const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,41 +55,37 @@ export function ProjectModal({
   const [hasMoreTeams, setHasMoreTeams] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refresh users when editing a project.
+  // Keep form fields in sync with the currently selected project.
   useEffect(() => {
     if (!open) return;
 
-    const fetchData = async () => {
+    setName(editing?.name ?? "");
+    setDescription(editing?.description ?? "");
+    setSelectedTeam(editing?.teamId ?? null);
+    setError(null);
+  }, [open, editing?.id, editing?.name, editing?.description, editing?.teamId]);
+
+  // Load teams for edit mode so we can display the assigned team name.
+  useEffect(() => {
+    if (!open || !editing?.teamId) return;
+
+    let cancelled = false;
+
+    const loadTeamsForEdit = async () => {
       try {
-        if (editing) {
-          try {
-            const [allUsers, members] = await Promise.all([
-              listAllUsers(),
-              listProjectMembers(editing.id),
-            ]);
-            setUsers(allUsers);
-            const memberIds = members.map((member) => member.user_id);
-            setParticipants(memberIds);
-            setInitialParticipants(memberIds);
-          } catch (err) {
-            console.error("Failed to fetch users:", err);
-            // Non-critical error, don't show to user
-          }
-        } else {
-          setParticipants([]);
-          setInitialParticipants([]);
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to load teams";
-        console.error("Failed to fetch data:", err);
-        setError(msg);
-      } finally {
-        setTeamsLoading(false);
+        const fetched = await listTeamsApi({ page: 1, limit: 100 });
+        if (cancelled) return;
+        setTeams(fetched);
+      } catch {
+        // Non-critical: fallback to raw team id when name is unavailable.
       }
     };
 
-    fetchData();
-  }, [open, editing]);
+    void loadTeamsForEdit();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, editing?.teamId]);
 
   // Reset search/pagination each time modal opens for create mode.
   useEffect(() => {
@@ -182,31 +163,19 @@ export function ProjectModal({
   const trimmedDescription = description.trim();
   const hasValidContent =
     trimmedName.length >= 3 && trimmedDescription.length >= 5 && !!user;
-  const participantsChanged =
-    participants.length !== initialParticipants.length ||
-    participants.some((participantId) => !initialParticipants.includes(participantId));
   const detailsChanged =
     trimmedName !== (editing?.name ?? "").trim() ||
     trimmedDescription !== (editing?.description ?? "").trim();
 
   const canSave = editing
-    ? hasValidContent && (detailsChanged || participantsChanged)
+    ? hasValidContent && detailsChanged
     : hasValidContent && !!selectedTeam;
 
   const reset = () => {
     setName(editing?.name ?? "");
     setDescription(editing?.description ?? "");
-    setParticipants(editing?.participants ?? []);
-    setInitialParticipants(editing?.participants ?? []);
+    setSelectedTeam(editing?.teamId ?? null);
     setError(null);
-  };
-
-  const toggleParticipant = (userId: string) => {
-    setParticipants((prev) =>
-      prev.includes(userId)
-        ? prev.filter((entry) => entry !== userId)
-        : [...prev, userId],
-    );
   };
 
   const save = async () => {
@@ -244,30 +213,8 @@ export function ProjectModal({
           });
         }
 
-        if (participantsChanged) {
-          const participantSet = new Set(participants);
-          const initialParticipantSet = new Set(initialParticipants);
-
-          const usersToAdd = participants.filter(
-            (participantId) => !initialParticipantSet.has(participantId),
-          );
-          const usersToRemove = initialParticipants.filter(
-            (participantId) => !participantSet.has(participantId),
-          );
-
-          await Promise.all([
-            ...usersToAdd.map((userId) => addProjectMember(editing.id, userId)),
-            ...usersToRemove.map((userId) =>
-              removeProjectMember(editing.id, userId),
-            ),
-          ]);
-        }
-
         console.log("[ProjectModal] ✓ Project updated:", updated);
-        updateProjectStore(editing.id, {
-          ...updated,
-          participants,
-        });
+        updateProjectStore(editing.id, updated);
         addNotification({
           message: "Project updated successfully",
           type: "success",
@@ -401,37 +348,31 @@ export function ProjectModal({
             </div>
           )}
 
+          {editing && (
+            <div className="grid gap-2">
+              <Label htmlFor="assigned-team">Assigned team</Label>
+              <Input
+                id="assigned-team"
+                value={
+                  teams.find((team) => team.id === selectedTeam)?.name ||
+                  selectedTeam ||
+                  ""
+                }
+                readOnly
+              />
+              <p className="text-xs text-text-secondary">
+                Manage team members from Team Management. Managers can add or
+                remove team members there.
+              </p>
+            </div>
+          )}
+
           {error && (
             <div className="rounded-lg border border-danger bg-danger/10 p-2 text-sm text-danger">
               {error}
             </div>
           )}
 
-          {editing && users.length > 0 && (
-            <div className="grid gap-2">
-              <Label>Team members</Label>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {users.map((u) => {
-                  const selected = participants.includes(u.id);
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => toggleParticipant(u.id)}
-                      disabled={loading}
-                      className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-                        selected
-                          ? "border-primary bg-primary/20 text-text-primary"
-                          : "border-border bg-card text-text-secondary hover:bg-muted"
-                      }`}
-                    >
-                      {u.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter>
