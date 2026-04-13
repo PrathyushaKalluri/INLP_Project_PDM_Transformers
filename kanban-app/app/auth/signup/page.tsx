@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { warmupBackend } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import * as authApi from "@/lib/auth";
 
@@ -30,6 +31,10 @@ export default function SignupPage() {
   const [role, setRole] = useState<"manager" | "member">("member");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void warmupBackend();
+  }, []);
 
   const canSubmit = useMemo(
     () =>

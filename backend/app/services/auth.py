@@ -6,7 +6,7 @@ import logging
 
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.models.user import User
-from app.repositories.user import UserRepository
+from app.repositories.user import AuthUserView, UserRepository
 from app.schemas.user import UserCreate, TokenResponse
 from app.services.errors import bad_request, conflict, not_found
 from jose import JWTError
@@ -73,7 +73,7 @@ class AuthService:
         
         # Step 1: Fetch user from database
         db_start = time.time()
-        user = await UserRepository.get_by_email(email)
+        user = await UserRepository.get_auth_view_by_email(email)
         db_time = time.time() - db_start
         logger.info(f"[AUTH_SERVICE] DB get_by_email completed - {db_time:.3f}s")
         
@@ -83,7 +83,8 @@ class AuthService:
         
         # Step 2: Verify password
         verify_start = time.time()
-        is_valid = verify_password(password, user.hashed_password)
+        # bcrypt verification is CPU-bound, so run it off the event loop.
+        is_valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
         verify_time = time.time() - verify_start
         logger.info(f"[AUTH_SERVICE] Password verification - {verify_time:.3f}s - Valid: {is_valid}")
         
@@ -109,7 +110,7 @@ class AuthService:
         return LoginResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            user=user,
+            user=user if isinstance(user, User) else AuthUserView.model_validate(user),
         )
 
     async def refresh(self, refresh_token: str) -> TokenResponse:

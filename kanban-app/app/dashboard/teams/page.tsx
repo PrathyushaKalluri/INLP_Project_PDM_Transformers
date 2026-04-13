@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Trash2,
   Plus,
@@ -76,12 +76,7 @@ export default function TeamsPage() {
   const [newRole, setNewRole] = useState<"OWNER" | "MEMBER">("MEMBER");
   const [roleLoading, setRoleLoading] = useState(false);
 
-  // Load teams and users
-  useEffect(() => {
-    void loadTeamsAndMembers();
-  }, []);
-
-  const loadTeamsAndMembers = async () => {
+  const loadTeamsAndMembers = useCallback(async () => {
     try {
       setLoading(true);
       const teamsData = await listTeamsApi();
@@ -104,7 +99,7 @@ export default function TeamsPage() {
       if (teamsWithMembers.length > 0) {
         setSelectedTeam(teamsWithMembers[0]);
       }
-    } catch (err) {
+    } catch {
       addNotification({
         message: "Failed to load teams",
         type: "warning",
@@ -112,7 +107,12 @@ export default function TeamsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addNotification, user?.id]);
+
+  // Load teams and users
+  useEffect(() => {
+    void loadTeamsAndMembers();
+  }, [loadTeamsAndMembers]);
 
   const handleEditTeam = (team: ExpandedTeam) => {
     setSelectedTeam(team);

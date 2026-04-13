@@ -38,6 +38,7 @@ export function PublishEditor() {
   const activeTranscriptId = useAppStore((state) => state.activeTranscriptId);
   const transcripts = useAppStore((state) => state.transcripts);
   const tasks = useAppStore((state) => state.tasks);
+  const user = useAppStore((state) => state.user);
   const addNotification = useAppStore((state) => state.addNotification);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
   const setTranscripts = useAppStore((state) => state.setTranscripts);
@@ -60,8 +61,10 @@ export function PublishEditor() {
   const [editableItems, setEditableItems] = useState<TranscriptActionItem[]>(
     [],
   );
+  const [isEditingMeetingInfo, setIsEditingMeetingInfo] = useState(false);
   const [isSavingEdits, setIsSavingEdits] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const isManager = user?.role === "manager";
 
   useEffect(() => {
     if (!selectedProject && projects.length > 0) {
@@ -82,7 +85,13 @@ export function PublishEditor() {
       try {
         const [members, items] = await Promise.all([
           currentProject?.teamId
-            ? listTeamMembersApi(currentProject.teamId)
+            ? listTeamMembersApi(currentProject.teamId).catch((error) => {
+                const status = (error as ApiError)?.status;
+                if (status === 403) {
+                  return [];
+                }
+                throw error;
+              })
             : Promise.resolve([]),
           listTranscriptsApi(selectedProject),
         ]);
@@ -142,9 +151,20 @@ export function PublishEditor() {
   useEffect(() => {
     setSummary(transcript?.summary ?? "");
     setEditableItems(transcript?.actionItems ?? []);
+    setMeetingTitle("Weekly Sync");
+    setMeetingDate(new Date().toISOString().slice(0, 10));
+    setIsEditingMeetingInfo(false);
   }, [transcript?.id, transcript?.summary, transcript?.actionItems]);
 
   const saveEdits = async () => {
+    if (!isManager) {
+      toast({
+        title: "Read-only access",
+        description: "Only managers can edit meeting summaries.",
+      });
+      return;
+    }
+
     if (!transcript) return;
 
     setIsSavingEdits(true);
@@ -207,6 +227,14 @@ export function PublishEditor() {
   };
 
   const publish = async () => {
+    if (!isManager) {
+      toast({
+        title: "Read-only access",
+        description: "Only managers can publish action items.",
+      });
+      return;
+    }
+
     if (!transcript || !currentProject) {
       console.warn("[PublishEditor] Missing transcript or project");
       return;
@@ -382,11 +410,11 @@ export function PublishEditor() {
           <Button
             variant="secondary"
             onClick={saveEdits}
-            disabled={isSavingEdits}
+            disabled={isSavingEdits || !isManager}
           >
             {isSavingEdits ? "Saving..." : "Save Edits"}
           </Button>
-          <Button onClick={publish} disabled={isPublishing}>
+          <Button onClick={publish} disabled={isPublishing || !isManager}>
             {isPublishing ? "Publishing..." : "Publish"}
           </Button>
         </div>
@@ -401,11 +429,22 @@ export function PublishEditor() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2">
+              <Label htmlFor="transcript-content">Transcript content</Label>
+              <Textarea
+                id="transcript-content"
+                className="min-h-[10rem]"
+                value={transcript.content}
+                readOnly
+              />
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="meeting-title">Meeting title</Label>
               <Input
                 id="meeting-title"
                 value={meetingTitle}
                 onChange={(event) => setMeetingTitle(event.target.value)}
+                disabled={!isManager || !isEditingMeetingInfo}
               />
             </div>
 
@@ -416,6 +455,7 @@ export function PublishEditor() {
                 type="date"
                 value={meetingDate}
                 onChange={(event) => setMeetingDate(event.target.value)}
+                disabled={!isManager || !isEditingMeetingInfo}
               />
             </div>
 
@@ -426,15 +466,26 @@ export function PublishEditor() {
                 className="min-h-[15rem]"
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
+                disabled={!isManager}
               />
             </div>
 
-            <Button
-              variant="secondary"
-              onClick={() => router.push("/dashboard/upload")}
-            >
-              Edit meeting info
-            </Button>
+            {isManager ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (isEditingMeetingInfo) {
+                    toast({
+                      title: "Meeting info updated",
+                      description: "Meeting details were updated for this review.",
+                    });
+                  }
+                  setIsEditingMeetingInfo((prev) => !prev);
+                }}
+              >
+                {isEditingMeetingInfo ? "Save meeting info" : "Edit meeting info"}
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -463,6 +514,7 @@ export function PublishEditor() {
                       onChange={(event) =>
                         updateEditableItem(idx, { title: event.target.value })
                       }
+                      disabled={!isManager}
                     />
                   </div>
                   <div className="mt-2 grid gap-2">
@@ -475,6 +527,7 @@ export function PublishEditor() {
                           description: event.target.value,
                         })
                       }
+                      disabled={!isManager}
                     />
                   </div>
                   <div className="mt-2 grid gap-2 md:grid-cols-2">
@@ -489,6 +542,7 @@ export function PublishEditor() {
                             deadline: event.target.value,
                           })
                         }
+                        disabled={!isManager}
                       />
                     </div>
                     <div className="grid gap-2">
@@ -502,6 +556,7 @@ export function PublishEditor() {
                           })
                         }
                         className="rounded-md border border-border bg-card px-3 py-2 text-sm text-text-primary"
+                        disabled={!isManager}
                       >
                         <option value="">Unassigned</option>
                         {users.map((user) => (

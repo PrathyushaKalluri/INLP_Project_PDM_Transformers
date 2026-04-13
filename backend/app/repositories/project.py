@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from beanie import PydanticObjectId
 
@@ -82,6 +83,22 @@ class ProjectRepository:
         project = Project(**kwargs)
         await project.insert()
         return project
+
+    @staticmethod
+    async def exists_team_name(
+        team_id: PydanticObjectId,
+        name: str,
+        exclude_project_id: PydanticObjectId | None = None,
+    ) -> bool:
+        query: dict = {
+            "team_id": team_id,
+            "name": {"$regex": f"^{re.escape(name.strip())}$", "$options": "i"},
+        }
+        if exclude_project_id:
+            query["_id"] = {"$ne": exclude_project_id}
+
+        existing = await Project.find_one(query)
+        return existing is not None
 
     @staticmethod
     async def update(project: Project, **kwargs) -> Project:

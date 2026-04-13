@@ -34,7 +34,7 @@ from app.schemas.meeting import MeetingCreate
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.schemas.user import LoginRequest, UserCreate
 from app.services.auth import AuthService
-from app.services.errors import bad_request
+from app.services.errors import bad_request, forbidden
 from app.services.meeting import MeetingService
 from app.services.notification import NotificationService
 from app.services.processing import ProcessingService
@@ -229,6 +229,26 @@ async def frontend_add_participant(
     await svc.add_member(project_id, data.user_id, current_user.id)
 
 
+@router.get("/projects/{project_id}/members")
+async def frontend_list_project_members(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    svc = ProjectService()
+    members = await svc.list_members(project_id, current_user.id)
+    return [{"user_id": str(member.user_id), "joined_at": member.joined_at.isoformat()} for member in members]
+
+
+@router.delete("/projects/{project_id}/participants/{user_id}", status_code=204)
+async def frontend_remove_participant(
+    project_id: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    svc = ProjectService()
+    await svc.remove_member(project_id, user_id, current_user.id)
+
+
 @router.get("/tasks")
 async def frontend_list_tasks(
     projectId: str | None = Query(None),
@@ -299,6 +319,9 @@ async def frontend_create_transcript(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != "manager":
+        raise forbidden("Only managers can upload transcripts.")
+
     meeting_svc = MeetingService()
 
     if data.meeting_id:
@@ -363,6 +386,9 @@ async def frontend_update_transcript(
     data: FrontendTranscriptUpdateRequest,
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != "manager":
+        raise forbidden("Only managers can edit meeting summaries.")
+
     svc = MeetingService()
     transcript = await svc.get_transcript_by_id(transcript_id, current_user.id)
 
@@ -477,6 +503,9 @@ async def frontend_publish(data: FrontendPublishRequest, current_user: User = De
     7. Return success with task IDs
     """
     
+    if current_user.role != "manager":
+        raise forbidden("Only managers can publish action items.")
+
     print(f"[PUBLISH] Called with transcriptId={data.transcript_id}, projectId={data.project_id}")
     
     # ──────────────────────────────────────────────────────────────────────

@@ -122,8 +122,49 @@ export const useAppStore = create<AppState>((set, get) => ({
   signup: () => {},
 
   // ─── User Management ───
-  setUser: (user) => set({ user }),
-  logout: () => set({ user: null }),
+  setUser: (user) =>
+    set((state) => {
+      if (!user) {
+        return {
+          user: null,
+          projects: [],
+          tasks: [],
+          selectedProject: null,
+          transcripts: [],
+          activeTranscriptId: null,
+          pendingTranscript: null,
+          processingState: initialProcessing,
+        };
+      }
+
+      const isSwitchingUser = state.user?.id && user?.id && state.user.id !== user.id;
+      if (!isSwitchingUser) {
+        return { user };
+      }
+
+      // Clear user-scoped entities when switching accounts to avoid stale ID lookups.
+      return {
+        user,
+        projects: [],
+        tasks: [],
+        selectedProject: null,
+        transcripts: [],
+        activeTranscriptId: null,
+        pendingTranscript: null,
+        processingState: initialProcessing,
+      };
+    }),
+  logout: () =>
+    set({
+      user: null,
+      projects: [],
+      tasks: [],
+      selectedProject: null,
+      transcripts: [],
+      activeTranscriptId: null,
+      pendingTranscript: null,
+      processingState: initialProcessing,
+    }),
 
   // ─── Theme Management ───
   setThemeMode: (themeMode) => {

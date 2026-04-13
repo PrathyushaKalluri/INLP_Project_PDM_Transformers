@@ -62,7 +62,7 @@ export async function signup(data: SignupRequest): Promise<{
   try {
     const registerStart = performance.now();
     console.debug(`[FRONTEND_AUTH] Sending POST /v1/auth/register`);
-    const response = await api.post<UserResponse>("/v1/auth/register", data);
+    await api.post<UserResponse>("/v1/auth/register", data);
     const registerTime = performance.now() - registerStart;
     console.debug(
       `[FRONTEND_AUTH] Register response received - ${registerTime.toFixed(2)}ms`,

@@ -1,8 +1,22 @@
 from datetime import datetime, timezone
 
 from beanie import PydanticObjectId
+from pydantic import BaseModel, Field
 
 from app.models.user import User, Workspace, Team, WorkspaceRole, TeamRole, TeamMember
+from app.schemas.base import PyObjectId
+
+
+class AuthUserView(BaseModel):
+    """Minimal user payload for login verification and response construction."""
+
+    id: PyObjectId = Field(alias="_id")
+    email: str
+    hashed_password: str
+    full_name: str
+    role: str
+    is_active: bool
+    created_at: datetime
 
 
 class UserRepository:
@@ -16,6 +30,13 @@ class UserRepository:
     @staticmethod
     async def get_by_email(email: str) -> User | None:
         return await User.find_one(User.email == email)
+
+    @staticmethod
+    async def get_auth_view_by_email(email: str) -> AuthUserView | None:
+        return await User.find_one(
+            User.email == email,
+            projection_model=AuthUserView,
+        )
 
     @staticmethod
     async def create(**kwargs) -> User:

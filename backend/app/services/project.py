@@ -16,10 +16,13 @@ class ProjectService:
         team = await self.team_svc.get_or_404(data.team_id)
         if not await self.team_svc.is_member(team.id, creator_id):
             raise forbidden("You must be a team member to create a project.")
+        normalized_name = data.name.strip()
+        if await ProjectRepository.exists_team_name(team.id, normalized_name):
+            raise conflict("A project with this name already exists in the selected team.")
         return await ProjectRepository.create(
             team_id=team.id,
             owner_id=creator_id,
-            name=data.name,
+            name=normalized_name,
             description=data.description,
             members=[],
             created_by=creator_id,
@@ -34,7 +37,19 @@ class ProjectService:
     async def update(self, project_id: str, data: ProjectUpdate, requester_id: PydanticObjectId) -> Project:
         project = await self.get_or_404(project_id)
         self._require_project_owner(project, requester_id)
-        return await ProjectRepository.update(project, **data.model_dump(exclude_none=True))
+        update_payload = data.model_dump(exclude_none=True)
+
+        if "name" in update_payload:
+            normalized_name = update_payload["name"].strip()
+            if await ProjectRepository.exists_team_name(
+                project.team_id,
+                normalized_name,
+                exclude_project_id=project.id,
+            ):
+                raise conflict("A project with this name already exists in the selected team.")
+            update_payload["name"] = normalized_name
+
+        return await ProjectRepository.update(project, **update_payload)
 
     async def delete(self, project_id: str, requester_id: PydanticObjectId) -> None:
         project = await self.get_or_404(project_id)

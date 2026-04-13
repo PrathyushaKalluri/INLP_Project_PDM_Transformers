@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { listWorkspacesApi } from "@/lib/teams";
+import { listWorkspacesApi, type Workspace } from "@/lib/teams";
 import { getAccessToken } from "@/lib/api";
 
 export default function DebugPage() {
   const [debug, setDebug] = useState<string[]>([]);
-  const [token, setToken] = useState<string | null>(null);
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
 
-  useEffect(() => {
-    const t = getAccessToken();
-    setToken(t ? "t: " + t.substring(0, 20) + "..." : "NO TOKEN");
+  const token = useMemo(() => {
+    const currentToken = getAccessToken();
+    return currentToken ? `t: ${currentToken.substring(0, 20)}...` : "NO TOKEN";
   }, []);
 
   const addDebug = (msg: string) => {
@@ -27,7 +25,7 @@ export default function DebugPage() {
       const ws = await listWorkspacesApi();
       addDebug(`Success! Got ${ws.length} workspaces`);
       setWorkspaces(ws);
-      ws.forEach((w: any) => {
+      ws.forEach((w) => {
         addDebug(`  - ${w.name} (${w.id})`);
       });
     } catch (err) {
@@ -63,7 +61,7 @@ export default function DebugPage() {
         <div className="border p-4 rounded">
           <Label>Workspaces Loaded</Label>
           <div className="space-y-2 mt-2">
-            {workspaces.map((ws: any) => (
+            {workspaces.map((ws) => (
               <div key={ws.id} className="p-2 bg-muted rounded">
                 <div className="font-medium">{ws.name}</div>
                 <div className="text-xs text-text-secondary">{ws.id}</div>

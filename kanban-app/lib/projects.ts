@@ -197,7 +197,9 @@ export async function listProjectMembers(
   console.log("[ProjectsAPI] Loading project members:", projectId);
 
   try {
-    const members = await api.get(`/frontend/projects/${projectId}/members`);
+    const members = await api.get<BackendProjectMember[]>(
+      `/frontend/projects/${projectId}/members`,
+    );
     console.log(
       "[ProjectsAPI] ✓ Members loaded:",
       Array.isArray(members) ? members.length : 0,
@@ -239,5 +241,5 @@ export async function removeProjectMember(
   projectId: string,
   userId: string,
 ): Promise<void> {
-  await api.delete(`/projects/${projectId}/members/${userId}`);
+  await api.delete(`/frontend/projects/${projectId}/participants/${userId}`);
 }

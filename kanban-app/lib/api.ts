@@ -45,6 +45,14 @@ const AUTH_FALLBACK_BASE =
   (process.env.NODE_ENV === "development"
     ? "http://127.0.0.1:8010/api"
     : "/api");
+const BACKEND_HEALTH_URL = (() => {
+  if (API_BASE.endsWith("/api")) {
+    const root = API_BASE.slice(0, -4);
+    return `${root || ""}/health`;
+  }
+
+  return `${API_BASE}/health`;
+})();
 // Request timeout constants tuned by endpoint type
 const DEFAULT_REQUEST_TIMEOUT = 15000; // 15 seconds - standard endpoints
 const AUTH_REQUEST_TIMEOUT = 60000; // 60 seconds - auth flows can cold-start on the first request
@@ -139,6 +147,29 @@ export function clearTokens(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+}
+
+/**
+ * Warm up the backend without blocking the UI.
+ * This is intentionally fire-and-forget so auth pages can trigger cold starts early.
+ */
+export async function warmupBackend(): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 2500);
+
+  try {
+    await fetch(BACKEND_HEALTH_URL, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    // Ignore warm-up failures; the real request path still handles retries/timeouts.
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 /**

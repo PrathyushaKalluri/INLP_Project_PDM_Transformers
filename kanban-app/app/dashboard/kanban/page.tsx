@@ -11,6 +11,8 @@ import { listTasks } from "@/lib/tasks";
 import { listTeamMembersApi } from "@/lib/teams";
 import { useAppStore } from "@/store/useAppStore";
 
+type ApiError = Error & { status?: number };
+
 export default function KanbanPage() {
   const user = useAppStore((state) => state.user);
   const selectedProject = useAppStore((state) => state.selectedProject);
@@ -66,7 +68,13 @@ export default function KanbanPage() {
         const [taskResult, members] = await Promise.all([
           listTasks({ projectId: selectedProject }),
           currentProject.teamId
-            ? listTeamMembersApi(currentProject.teamId)
+            ? listTeamMembersApi(currentProject.teamId).catch((error) => {
+                const status = (error as ApiError)?.status;
+                if (status === 403) {
+                  return [];
+                }
+                throw error;
+              })
             : Promise.resolve([]),
         ]);
 

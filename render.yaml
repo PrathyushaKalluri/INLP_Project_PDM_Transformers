@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: inlp-project-pdm-transformers-backend
+    runtime: python
+    plan: starter
+    numInstances: 1
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: MONGODB_URL
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: meeting_tasks
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: CORS_ORIGINS
+        value: https://inlp-project-pdm-transformers.vercel.app
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://.*\.vercel\.app$

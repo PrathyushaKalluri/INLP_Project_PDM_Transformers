@@ -14,6 +14,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 export default function UploadPage() {
   const router = useRouter();
+  const user = useAppStore((state) => state.user);
   const selectedProject = useAppStore((state) => state.selectedProject);
   const startProcessing = useAppStore((state) => state.startProcessing);
   const resetProcessing = useAppStore((state) => state.resetProcessing);
@@ -21,9 +22,41 @@ export default function UploadPage() {
   const [transcript, setTranscript] = useState("");
 
   const canSubmit = useMemo(
-    () => Boolean(selectedProject) && transcript.trim().length > 20,
-    [selectedProject, transcript],
+    () =>
+      user?.role === "manager" &&
+      Boolean(selectedProject) &&
+      transcript.trim().length > 20,
+    [user?.role, selectedProject, transcript],
   );
+
+  if (user?.role !== "manager") {
+    return (
+      <div className="space-y-4">
+        <SectionHeading
+          title="Upload Transcript"
+          subtitle="Only managers can upload and process transcripts."
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-medium">Read-only access</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-text-secondary">
+              You can still review meeting summaries and project tasks.
+            </p>
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/dashboard/publish")}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Go to Meeting Summaries
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!selectedProject || !canSubmit) {

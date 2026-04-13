@@ -222,17 +222,19 @@ export function Sidebar({
             </button>
           ) : null}
 
-          <Link
-            href="/dashboard/upload"
-            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-              pathname === "/dashboard/upload"
-                ? "bg-primary/20 text-text-primary"
-                : "text-text-secondary hover:bg-muted"
-            }`}
-          >
-            <Upload className="h-4 w-4" />
-            Upload Transcript
-          </Link>
+          {isManager ? (
+            <Link
+              href="/dashboard/upload"
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+                pathname === "/dashboard/upload"
+                  ? "bg-primary/20 text-text-primary"
+                  : "text-text-secondary hover:bg-muted"
+              }`}
+            >
+              <Upload className="h-4 w-4" />
+              Upload Transcript
+            </Link>
+          ) : null}
 
           <button
             type="button"

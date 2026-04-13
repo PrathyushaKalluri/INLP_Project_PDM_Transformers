@@ -16,7 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppStore } from "@/store/useAppStore";
-import { createProject, updateProject } from "@/lib/projects";
+import {
+  addProjectMember,
+  createProject,
+  listProjectMembers,
+  removeProjectMember,
+  updateProject,
+} from "@/lib/projects";
 import { listAllUsers } from "@/lib/users";
 import { listTeamsApi, type Team } from "@/lib/teams";
 import type { User } from "@/types";
@@ -50,6 +56,9 @@ export function ProjectModal({
   const [participants, setParticipants] = useState<string[]>(
     editing?.participants ?? [],
   );
+  const [initialParticipants, setInitialParticipants] = useState<string[]>(
+    editing?.participants ?? [],
+  );
   const [users, setUsers] = useState<User[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -69,12 +78,21 @@ export function ProjectModal({
       try {
         if (editing) {
           try {
-            const allUsers = await listAllUsers();
+            const [allUsers, members] = await Promise.all([
+              listAllUsers(),
+              listProjectMembers(editing.id),
+            ]);
             setUsers(allUsers);
+            const memberIds = members.map((member) => member.user_id);
+            setParticipants(memberIds);
+            setInitialParticipants(memberIds);
           } catch (err) {
             console.error("Failed to fetch users:", err);
             // Non-critical error, don't show to user
           }
+        } else {
+          setParticipants([]);
+          setInitialParticipants([]);
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to load teams";
@@ -160,16 +178,26 @@ export function ProjectModal({
     };
   }, [open, editing, teamPage, teamSearch]);
 
-  const canSave =
-    name.trim().length >= 3 &&
-    description.trim().length >= 5 &&
-    !!selectedTeam &&
-    !!user;
+  const trimmedName = name.trim();
+  const trimmedDescription = description.trim();
+  const hasValidContent =
+    trimmedName.length >= 3 && trimmedDescription.length >= 5 && !!user;
+  const participantsChanged =
+    participants.length !== initialParticipants.length ||
+    participants.some((participantId) => !initialParticipants.includes(participantId));
+  const detailsChanged =
+    trimmedName !== (editing?.name ?? "").trim() ||
+    trimmedDescription !== (editing?.description ?? "").trim();
+
+  const canSave = editing
+    ? hasValidContent && (detailsChanged || participantsChanged)
+    : hasValidContent && !!selectedTeam;
 
   const reset = () => {
     setName(editing?.name ?? "");
     setDescription(editing?.description ?? "");
     setParticipants(editing?.participants ?? []);
+    setInitialParticipants(editing?.participants ?? []);
     setError(null);
   };
 
@@ -190,11 +218,11 @@ export function ProjectModal({
       isLoading: loading,
     });
 
-    if (!canSave || !user || !selectedTeam) {
+    if (!canSave || !user || (!editing && !selectedTeam)) {
       console.log("[ProjectModal] ✗ Cannot save - validation failed:", {
         valid: canSave,
         hasUser: !!user,
-        hasTeam: !!selectedTeam,
+        hasTeam: !!selectedTeam || !!editing,
       });
       return;
     }
@@ -208,12 +236,38 @@ export function ProjectModal({
       if (editing) {
         // Update existing project via API
         console.log("[ProjectModal] Updating project:", editing.id);
-        const updated = await updateProject(editing.id, {
-          name: name.trim(),
-          description: description.trim(),
-        });
+        let updated = editing;
+        if (detailsChanged) {
+          updated = await updateProject(editing.id, {
+            name: trimmedName,
+            description: trimmedDescription,
+          });
+        }
+
+        if (participantsChanged) {
+          const participantSet = new Set(participants);
+          const initialParticipantSet = new Set(initialParticipants);
+
+          const usersToAdd = participants.filter(
+            (participantId) => !initialParticipantSet.has(participantId),
+          );
+          const usersToRemove = initialParticipants.filter(
+            (participantId) => !participantSet.has(participantId),
+          );
+
+          await Promise.all([
+            ...usersToAdd.map((userId) => addProjectMember(editing.id, userId)),
+            ...usersToRemove.map((userId) =>
+              removeProjectMember(editing.id, userId),
+            ),
+          ]);
+        }
+
         console.log("[ProjectModal] ✓ Project updated:", updated);
-        updateProjectStore(editing.id, updated);
+        updateProjectStore(editing.id, {
+          ...updated,
+          participants,
+        });
         addNotification({
           message: "Project updated successfully",
           type: "success",
@@ -227,8 +281,8 @@ export function ProjectModal({
         });
         const created = await createProject({
           team_id: selectedTeam,
-          name: name.trim(),
-          description: description.trim(),
+          name: trimmedName,
+          description: trimmedDescription,
         });
         console.log("[ProjectModal] ✓ Project created:", created);
         addProject(created);

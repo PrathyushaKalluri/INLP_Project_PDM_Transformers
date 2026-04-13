@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { warmupBackend } from "@/lib/api";
 import { useAppStore } from "@/store/useAppStore";
 import * as authApi from "@/lib/auth";
 
@@ -20,6 +21,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void warmupBackend();
+  }, []);
 
   const canSubmit = useMemo(
     () => email.trim().includes("@") && password.trim().length >= 8,

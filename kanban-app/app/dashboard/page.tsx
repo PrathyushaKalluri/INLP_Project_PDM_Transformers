@@ -8,7 +8,6 @@ import { EmptyState } from "@/components/shared/empty-state";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const user = useAppStore((state) => state.user);
   const projects = useAppStore((state) => state.projects);
   const setProjects = useAppStore((state) => state.setProjects);
   const setSelectedProject = useAppStore((state) => state.setSelectedProject);
